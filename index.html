@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基金持仓分析 - 专业投资工具</title>
+    <link rel="stylesheet" href="css/style.css?v=14">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div class="bg-decoration">
+        <div class="bg-grid"></div>
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">📊</span>
+                <h1 class="logo-text">FundScope</h1>
+            </div>
+            <p class="subtitle">专业基金持仓分析平台</p>
+        </header>
+
+        <section class="search-section">
+            <div class="search-box">
+                <div class="search-input-wrapper">
+                    <div class="combobox-wrapper">
+                        <input
+                            type="text"
+                            id="fundCode"
+                            class="search-input combobox-input"
+                            placeholder="输入基金名称或代码，点击选择基金..."
+                            maxlength="20"
+                            autocomplete="off"
+                        >
+                        <span id="clearBtn" class="clear-icon hidden" title="清空">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </span>
+                        <div id="fundDropdown" class="fund-dropdown hidden"></div>
+                    </div>
+                    <button id="searchBtn" class="search-btn">
+                        <span class="btn-text">查询持仓</span>
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <div id="loadingState" class="loading-state hidden">
+            <div class="spinner"></div>
+            <p class="loading-text">正在获取基金数据...</p>
+        </div>
+
+        <div id="errorState" class="error-state hidden">
+            <div class="error-icon">⚠️</div>
+            <p class="error-text" id="errorText">获取数据失败，请检查基金代码</p>
+            <button class="retry-btn" id="retryBtn">重试</button>
+        </div>
+
+        <main id="mainContent" class="main-content hidden">
+            <section class="info-card">
+                <div class="info-header">
+                    <div class="info-title">
+                        <span class="fund-name" id="fundName">--</span>
+                        <span class="fund-code" id="fundCodeDisplay">--</span>
+                    </div>
+                    <div class="info-update">
+                        <span class="update-label">数据更新：</span>
+                        <span class="update-time" id="updateTime">--</span>
+                    </div>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">最新净值</span>
+                        <span class="info-value" id="netValue">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">日涨跌</span>
+                        <span class="info-value" id="dayChange">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">近1年收益率</span>
+                        <span class="info-value" id="syl1n">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">基金经理</span>
+                        <span class="info-value" id="manager">--</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="table-section">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3 class="table-title">持仓明细</h3>
+                        <div class="table-controls">
+                            <select id="sortSelect" class="sort-select">
+                                <option value="ratio">按持仓比例</option>
+                                <option value="amount">按持仓市值</option>
+                                <option value="name">按股票名称</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="holding-table">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>股票名称</th>
+                                    <th>股票代码</th>
+                                    <th>涨跌幅</th>
+                                    <th>持仓占比</th>
+                                    <th>持仓市值(万元)</th>
+                                    <th>持仓股数(万股)</th>
+                                    <th>增减持</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer">
+                        <span class="total-label">合计持仓：</span>
+                        <span class="total-value" id="totalRatio">--</span>
+                        <span class="total-divider">|</span>
+                        <span class="total-label">合计市值：</span>
+                        <span class="total-value" id="totalAmount">--</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">持仓占比分布</h3>
+                        <span class="chart-desc">重仓股占比</span>
+                    </div>
+                    <div id="pieChart" class="chart-container"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">持仓市值排行</h3>
+                        <span class="chart-desc">按市值排序（万元）</span>
+                    </div>
+                    <div id="barChart" class="chart-container"></div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>数据来源：天天基金网 | 仅供参考，不构成投资建议</p>
+        </footer>
+    </div>
+
+    <script src="js/shared.js?v=1"></script>
+    <script src="js/app.js?v=29"></script>
+</body>
+</html>
