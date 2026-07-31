@@ -26,7 +26,7 @@ pm2 save
 ```bash
 # 清理失败文件夹
 rm -rf fundscope
-git clone https://mirror.ghproxy.com/https://github.com/whjin/fundscope.git
+git clone https://gitclone.com/github.com/whjin/fundscope.git
 
 cd fundscope
 npm install
