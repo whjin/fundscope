@@ -16,6 +16,7 @@ const S = require('./js/shared.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BASE_PATH = process.env.BASE_PATH || '';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const TIMEOUT = 20000;
@@ -72,7 +73,7 @@ function decodeGBK(buf) {
 // Express 路由
 // ================================================================
 
-app.use(express.static(path.join(__dirname), {
+app.use(BASE_PATH || '/', express.static(path.join(__dirname), {
     index: false,
     etag: false,
     lastModified: false,
@@ -242,18 +243,23 @@ app.get('/api/fund/holdings/debug', async (req, res) => {
     }
 });
 
-app.get('*', (_req, res) => {
+app.get('*', (req, res) => {
+    if (BASE_PATH && !req.path.startsWith(BASE_PATH) && req.path !== '/') {
+        return res.status(404).send('Not Found');
+    }
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
+    const baseUrl = BASE_PATH ? `http://localhost:${PORT}${BASE_PATH}` : `http://localhost:${PORT}`;
     console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║        FundScope - 基金持仓分析平台 (Node.js 后端)             ║
 ╠══════════════════════════════════════════════════════════════╣
-║  访问地址:  http://localhost:${String(PORT).padEnd(37)}║
+║  访问地址:  ${baseUrl.padEnd(47)}║
 ║  本地测试:  http://127.0.0.1:${String(PORT).padEnd(36)}║
 ╚══════════════════════════════════════════════════════════════╝
 `);
     console.log(`[INFO] Node 版本: ${process.version}  |  工作目录: ${__dirname}`);
+    if (BASE_PATH) console.log(`[INFO] BASE_PATH: ${BASE_PATH}  |  反向代理模式`);
 });

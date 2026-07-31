@@ -8,10 +8,14 @@ let fundConfigList = [];
 let stockQuotesCache = {};
 let pieResizeObserver = null;
 
-/* ===== 静态模式检测 (GitHub Pages 部署) ===== */
-const IS_STATIC = window.location.hostname.endsWith('.github.io') ||
-    (window.location.protocol === 'https:' && !window.location.port &&
-     !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1'));
+/* ===== 部署模式检测 ===== */
+const IS_STATIC = (() => {
+    const host = window.location.hostname;
+    if (host.endsWith('.github.io')) return true;
+    if (host === 'localhost' || host === '127.0.0.1') return false;
+    if (host === 'wuhuajin.com' || host === 'www.wuhuajin.com') return false;
+    return window.location.protocol === 'https:' && !window.location.port;
+})();
 
 const CORS_PROXIES = [
     'https://api.allorigins.win/raw?url=',
@@ -56,7 +60,7 @@ function fetchFundConfig() {
     if (IS_STATIC) {
         return fetch('data.json').then(res => res.json()).then(json => ({ success: true, funds: json.funds || [] }));
     }
-    return request('/api/funds/config');
+    return request('api/funds/config');
 }
 
 async function fetchFundInfo(fundCode) {
@@ -68,7 +72,7 @@ async function fetchFundInfo(fundCode) {
         if (!data) throw new Error('未解析到基金数据');
         return { success: true, data };
     }
-    return request(`/api/fund/info?code=${encodeURIComponent(fundCode)}`);
+    return request(`api/fund/info?code=${encodeURIComponent(fundCode)}`);
 }
 
 async function fetchFundHoldings(fundCode) {
@@ -80,7 +84,7 @@ async function fetchFundHoldings(fundCode) {
         if (!data || !data.data || !data.data.length) throw new Error('未获取到持仓数据');
         return { success: true, data };
     }
-    return request(`/api/fund/holdings?code=${encodeURIComponent(fundCode)}`);
+    return request(`api/fund/holdings?code=${encodeURIComponent(fundCode)}`);
 }
 
 async function fetchStockQuotes(codes) {
@@ -120,7 +124,7 @@ async function fetchStockQuotes(codes) {
         }
         return { success: true, data: results };
     }
-    return request(`/api/stock/quote?codes=${codes.join(',')}`);
+    return request(`api/stock/quote?codes=${codes.join(',')}`);
 }
 
 /* ===== 数据处理 ===== */
