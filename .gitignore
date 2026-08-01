@@ -2,3 +2,6 @@ node_modules/
 _Probe*
 _test_*
 *.log
+
+# 部署敏感信息 - 服务器密码文件，切勿提交到版本控制
+password.txt

@@ -5,6 +5,37 @@ description: "FundScope 基金持仓分析平台部署指南。适用于将 Node
 
 # FundScope 部署指南（阿里云 Alibaba Cloud Linux 3）
 
+## 快速开始
+
+### 方式一：一键部署（推荐）
+
+```bash
+# 上传并执行一键部署脚本
+bash scripts/deploy.sh
+```
+
+一键脚本自动完成环境安装、代码部署、服务启动、Nginx 配置、防火墙设置。
+
+### 方式二：快速诊断
+
+```bash
+# 一键检查服务健康状态
+bash scripts/diagnose.sh
+```
+
+诊断内容：系统环境、PM2 状态、端口监听、服务可用性、Nginx 配置、资源使用、日志检查。
+
+### 方式三：代码更新
+
+```bash
+# 拉取最新代码并重启服务
+bash scripts/update.sh
+```
+
+自动检测依赖变更，智能判断是否需要重新安装依赖。
+
+---
+
 ## 一、部署架构概览
 
 ```

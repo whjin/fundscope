@@ -11,11 +11,11 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
+// 共享解析模块（与前端 app.js 共用）
 const S = require('./js/shared.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/$/, '');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const TIMEOUT = 20000;
@@ -72,19 +72,7 @@ function decodeGBK(buf) {
 // Express 路由
 // ================================================================
 
-// 请求日志（部署模式下调试用）
-app.use((req, res, next) => {
-    if (BASE_PATH) {
-        console.log(`[REQ] ${req.method} ${req.url} (BASE_PATH=${BASE_PATH})`);
-    }
-    next();
-});
-
-// 静态文件挂载
-// 注意：Nginx 的 proxy_pass 末尾带 / 会剥离 /fundscope 前缀，
-// 所以 Express 收到的是 /js/app.js 而非 /fundscope/js/app.js。
-// 因此无论是否子路径部署，静态文件都挂载在根路径 / 下。
-const staticOptions = {
+app.use(express.static(path.join(__dirname), {
     index: false,
     etag: false,
     lastModified: false,
@@ -93,16 +81,7 @@ const staticOptions = {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
     }
-};
-app.use('/', express.static(path.join(__dirname), staticOptions));
-
-// 健康检查（始终可用）
-app.get('/health', (_req, res) => {
-    res.setHeader('Content-Type', 'text/plain');
-    res.send('OK');
-});
-
-// API 路由 - 始终注册在 /api/*，Nginx 负责剥离 /fundscope 前缀
+}));
 
 app.get('/api/fund/info', async (req, res) => {
     const code = String(req.query.code || '').trim();
@@ -179,40 +158,61 @@ app.get('/api/stock/quote', async (req, res) => {
 
     try {
         const results = {};
-        const sinaCodes = codeList.map(code => {
+        
+        // 转换为腾讯财经的代码格式（和新浪一样：sz/sh/hk + 代码）
+        const tencentCodes = codeList.map(code => {
             const market = S.getMarketByCode(code);
             const prefix = market === 0 ? 'sz' : (market === 1 ? 'sh' : 'hk');
             return `${prefix}${code}`;
         }).join(',');
 
-        const { status, buffer } = await requestGet(`https://hq.sinajs.cn/list=${sinaCodes}`, 'https://finance.sina.com.cn/');
+        const { status, buffer } = await requestGet(
+            `https://qt.gtimg.cn/q=${tencentCodes}`,
+            'https://gu.qq.com/'
+        );
 
         if (status === 200 && buffer) {
             const text = decodeGBK(buffer);
-            const lines = text.split(';').filter(l => l.trim().startsWith('var'));
+            const lines = text.split(';').filter(l => l.trim().startsWith('v_'));
+            
             for (const line of lines) {
-                const match = line.match(/var hq_str_(\w+)="(.*)"/);
+                const match = line.match(/v_(\w+)="(.*)"/);
                 if (!match) continue;
-                const stockCode = match[1].replace(/^(sz|sh|hk)/, '');
+                
+                const fullCode = match[1];
+                const stockCode = fullCode.replace(/^(sz|sh|hk)/, '');
                 const dataStr = match[2];
-                if (!dataStr) { results[stockCode] = { code: stockCode, name: '', zdf: null }; continue; }
-                const parts = dataStr.split(',');
-                if (parts.length >= 4) {
-                    const prevClose = parseFloat(parts[2]);
-                    const currentPrice = parseFloat(parts[3]);
-                    let zdf = null;
-                    if (prevClose > 0 && !isNaN(currentPrice)) {
-                        zdf = ((currentPrice - prevClose) / prevClose) * 100;
-                        zdf = Math.round(zdf * 100) / 100;
-                    }
-                    results[stockCode] = { code: stockCode, name: parts[0] || '', zdf };
+                
+                if (!dataStr) {
+                    results[stockCode] = { code: stockCode, name: '', zdf: null };
+                    continue;
+                }
+                
+                const parts = dataStr.split('~');
+                if (parts.length >= 33) {
+                    // 腾讯财经字段说明：
+                    // parts[1] = 股票名称
+                    // parts[2] = 股票代码
+                    // parts[3] = 当前价格
+                    // parts[4] = 昨收价格
+                    // parts[32] = 涨跌幅(%)
+                    const stockName = parts[1] || '';
+                    const zdf = parseFloat(parts[32]);
+                    
+                    results[stockCode] = {
+                        code: stockCode,
+                        name: stockName,
+                        zdf: !isNaN(zdf) ? zdf : null
+                    };
                 }
             }
         }
 
+        // 填充未获取到的股票
         for (const code of codeList) {
             if (!results[code]) results[code] = { code, name: '', zdf: null };
         }
+
         res.json({ success: true, data: results });
     } catch (err) {
         console.error('[api/stock/quote]', err.message);
@@ -263,32 +263,18 @@ app.get('/api/fund/holdings/debug', async (req, res) => {
     }
 });
 
-// 兜底路由：返回 index.html（支持前端 SPA 路由）
-// 注意：Nginx 已剥离 /fundscope 前缀，Express 收到的路径不含前缀，
-// 因此这里不需要检查 BASE_PATH。Nginx 只转发 /fundscope/ 下的请求，
-// 非授权路径不会到达 Express。
-app.get('*', (req, res) => {
-    const pathname = req.path;
-
-    // API 路径未匹配到具体路由，返回 404
-    if (pathname.startsWith('/api/')) {
-        return res.status(404).json({ success: false, message: 'API Not Found' });
-    }
-
-    // 其余路径返回 index.html
+app.get('*', (_req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
-    const baseUrl = BASE_PATH ? `http://localhost:${PORT}${BASE_PATH}` : `http://localhost:${PORT}`;
     console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║        FundScope - 基金持仓分析平台 (Node.js 后端)             ║
 ╠══════════════════════════════════════════════════════════════╣
-║  访问地址:  ${baseUrl.padEnd(47)}║
+║  访问地址:  http://localhost:${String(PORT).padEnd(37)}║
 ║  本地测试:  http://127.0.0.1:${String(PORT).padEnd(36)}║
 ╚══════════════════════════════════════════════════════════════╝
 `);
     console.log(`[INFO] Node 版本: ${process.version}  |  工作目录: ${__dirname}`);
-    if (BASE_PATH) console.log(`[INFO] BASE_PATH: ${BASE_PATH}  |  反向代理模式`);
 });

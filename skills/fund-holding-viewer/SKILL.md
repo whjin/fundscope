@@ -241,19 +241,151 @@ function renderDropdown(list, keyword) {
 
 ## 七、部署方案
 
-### 7.1 GitHub Pages（推荐）
+### 7.1 GitHub Pages（静态模式）
 1. 推送代码到 GitHub 仓库
 2. Settings → Pages → Source: GitHub Actions
 3. `.github/workflows/deploy.yml` 自动部署静态文件
 4. 访问 `https://用户名.github.io/仓库名/`
 5. 静态模式自动激活，通过 CORS 代理获取数据
 
-### 7.2 阿里云服务器
-1. 购买轻量应用服务器（2核2G，Ubuntu 22.04）
-2. 安装 Node.js + PM2 + Nginx
-3. `pm2 start server.js --name fund-app`
-4. Nginx 反向代理 80 → 3000
-5. 后端模式运行，稳定可靠
+### 7.2 阿里云服务器（后端模式）
+
+#### 7.2.1 一键部署（推荐）
+
+项目提供完整的一键部署脚本，适用于 Alibaba Cloud Linux 3 / CentOS 8+。
+
+```bash
+# 1. 上传部署脚本到服务器
+scp scripts/deploy.sh root@你的服务器IP:/root/
+
+# 2. 登录服务器执行
+ssh root@你的服务器IP
+chmod +x /root/deploy.sh
+bash /root/deploy.sh
+```
+
+部署脚本自动完成：
+- ✅ 系统软件包更新
+- ✅ Node.js / Git / Nginx 安装
+- ✅ PM2 进程管理器安装
+- ✅ 项目代码拉取
+- ✅ 依赖安装
+- ✅ 服务启动 + 开机自启
+- ✅ Nginx 反向代理配置
+- ✅ 防火墙配置
+- ✅ 部署结果验证
+
+#### 7.2.2 手动部署步骤
+
+如果需要自定义配置，可按以下步骤手动部署：
+
+**1. 环境准备**
+```bash
+# 更新系统
+dnf update -y
+
+# 安装基础软件
+dnf install -y nodejs npm git nginx
+
+# 安装 PM2
+npm install pm2 -g
+```
+
+**2. 部署项目**
+```bash
+# 创建项目目录
+mkdir -p /www
+cd /www
+
+# 拉取代码
+git clone https://github.com/whjin/fundscope.git
+cd fundscope
+
+# 安装依赖
+npm install --production
+
+# 启动服务
+pm2 start server.js --name fund-server
+pm2 save
+pm2 startup systemd
+```
+
+**3. Nginx 配置**
+
+参考 `configs/nginx-http.conf` 或 `configs/nginx-https.conf`，将配置文件复制到 `/etc/nginx/conf.d/` 目录。
+
+```bash
+# 测试配置
+nginx -t
+
+# 重载配置
+systemctl reload nginx
+```
+
+#### 7.2.3 部署脚本说明
+
+| 脚本 | 位置 | 说明 |
+|------|------|------|
+| 一键部署 | `scripts/deploy.sh` | 全新服务器一键部署 |
+| 健康诊断 | `scripts/diagnose.sh` | 一键检查服务状态、资源、日志 |
+| 代码更新 | `scripts/update.sh` | 拉取最新代码并重启服务 |
+
+**使用方法：**
+```bash
+# 健康诊断
+bash scripts/diagnose.sh
+
+# 代码更新
+bash scripts/update.sh
+```
+
+#### 7.2.4 配置文件模板
+
+| 配置文件 | 位置 | 说明 |
+|----------|------|------|
+| Nginx HTTP | `configs/nginx-http.conf` | 基础 HTTP 配置 |
+| Nginx HTTPS | `configs/nginx-https.conf` | 完整 HTTPS 配置（含 SSL） |
+| PM2 生态 | `configs/ecosystem.config.js` | PM2 配置文件 |
+
+#### 7.2.5 Windows 远程部署
+
+在 Windows 环境下可使用 PuTTY 工具链（plink + pscp）进行远程部署。
+
+详细说明见 `windows/README.md`，包含：
+- plink/pscp 工具使用方法
+- 密码认证 / 密钥认证配置
+- 一键远程部署脚本示例
+- 常见问题解答
+
+#### 7.2.6 部署验证
+
+```bash
+# 1. 检查 PM2 服务状态
+pm2 status
+
+# 2. 测试本地服务
+curl http://127.0.0.1:3000/api/funds/config
+
+# 3. 测试 Nginx 代理
+curl -H "Host: fundscope.wuhuajin.com" http://127.0.0.1
+
+# 4. 运行诊断脚本
+bash scripts/diagnose.sh
+```
+
+#### 7.2.7 常见部署问题
+
+| 问题 | 原因 | 解决方案 |
+|------|------|----------|
+| 502 Bad Gateway | Node.js 服务未启动 | `pm2 status` 检查，`pm2 restart fund-server` 重启 |
+| 403 Forbidden | Nginx 权限问题 | 检查文件权限和 SELinux 配置 |
+| 域名无法访问 | 未备案 / DNS 未生效 | 国内服务器需 ICP 备案，检查 DNS 解析 |
+| 端口无法访问 | 安全组未开放 | 阿里云控制台安全组开放 80/443 端口 |
+| 服务自动停止 | 内存不足 / 代码崩溃 | 查看 `pm2 logs`，增加内存或修复 bug |
+
+---
+
+**详细部署文档**：请参考 [`DEPLOY.md`](./DEPLOY.md)，包含完整的部署流程、HTTPS 配置、故障排查等内容。
 
 ---
 
