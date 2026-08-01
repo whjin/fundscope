@@ -11,12 +11,11 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
-// 共享解析模块（与前端 app.js 共用）
 const S = require('./js/shared.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_PATH = process.env.BASE_PATH || '';
+const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/$/, '');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const TIMEOUT = 20000;
@@ -73,7 +72,19 @@ function decodeGBK(buf) {
 // Express 路由
 // ================================================================
 
-app.use(BASE_PATH || '/', express.static(path.join(__dirname), {
+// 请求日志（部署模式下调试用）
+app.use((req, res, next) => {
+    if (BASE_PATH) {
+        console.log(`[REQ] ${req.method} ${req.url} (BASE_PATH=${BASE_PATH})`);
+    }
+    next();
+});
+
+// 静态文件挂载
+// 注意：Nginx 的 proxy_pass 末尾带 / 会剥离 /fundscope 前缀，
+// 所以 Express 收到的是 /js/app.js 而非 /fundscope/js/app.js。
+// 因此无论是否子路径部署，静态文件都挂载在根路径 / 下。
+const staticOptions = {
     index: false,
     etag: false,
     lastModified: false,
@@ -82,7 +93,16 @@ app.use(BASE_PATH || '/', express.static(path.join(__dirname), {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
     }
-}));
+};
+app.use('/', express.static(path.join(__dirname), staticOptions));
+
+// 健康检查（始终可用）
+app.get('/health', (_req, res) => {
+    res.setHeader('Content-Type', 'text/plain');
+    res.send('OK');
+});
+
+// API 路由 - 始终注册在 /api/*，Nginx 负责剥离 /fundscope 前缀
 
 app.get('/api/fund/info', async (req, res) => {
     const code = String(req.query.code || '').trim();
@@ -243,10 +263,19 @@ app.get('/api/fund/holdings/debug', async (req, res) => {
     }
 });
 
+// 兜底路由：返回 index.html（支持前端 SPA 路由）
+// 注意：Nginx 已剥离 /fundscope 前缀，Express 收到的路径不含前缀，
+// 因此这里不需要检查 BASE_PATH。Nginx 只转发 /fundscope/ 下的请求，
+// 非授权路径不会到达 Express。
 app.get('*', (req, res) => {
-    if (BASE_PATH && !req.path.startsWith(BASE_PATH) && req.path !== '/') {
-        return res.status(404).send('Not Found');
+    const pathname = req.path;
+
+    // API 路径未匹配到具体路由，返回 404
+    if (pathname.startsWith('/api/')) {
+        return res.status(404).json({ success: false, message: 'API Not Found' });
     }
+
+    // 其余路径返回 index.html
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 

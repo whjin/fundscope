@@ -33,3 +33,18 @@ npm install
 pm2 start server.js --name fund-server
 pm2 startup && pm2 save
 ```
+
+# 生成 `HTTPS` 证书
+
+```bash
+certbot certonly --manual --preferred-challenges dns -d wuhuajin.com -d www.wuhuajin.com
+# 每次生成的解析记录和 value 需要手动添加到 DNS 服务器，总共有两个
+
+# 验证根域名TXT记录（替换成你自己的域名）
+dig @8.8.8.8 -t TXT _acme-challenge.wuhuajin.com +short
+
+# 验证www域名TXT记录
+dig @8.8.8.8 -t TXT _acme-challenge.www.wuhuajin.com +short
+
+# 完成以上校验后才能继续按回车执行后续证书生成
+```
