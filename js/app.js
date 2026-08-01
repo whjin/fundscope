@@ -8,12 +8,18 @@ let fundConfigList = [];
 let stockQuotesCache = {};
 let pieResizeObserver = null;
 
-/* ===== 部署模式检测 ===== */
+/* ===== 部署模式检测 =====
+ * IS_STATIC = true  → 静态模式（GitHub Pages），前端走 CORS 代理
+ * IS_STATIC = false → 后端模式（Node.js + Express），请求走同源 API
+ * 注意：必须显式识别 fundscope.wuhuajin.com，否则会落入兜底分支
+ *      被误判为静态模式，导致前端走 CORS 代理绕过后端
+ */
 const IS_STATIC = (() => {
     const host = window.location.hostname;
     if (host.endsWith('.github.io')) return true;
     if (host === 'localhost' || host === '127.0.0.1') return false;
-    if (host === 'wuhuajin.com' || host === 'www.wuhuajin.com') return false;
+    // wuhuajin.com 主域及所有子域（如 fundscope.wuhuajin.com）均走后端模式
+    if (host === 'wuhuajin.com' || host.endsWith('.wuhuajin.com')) return false;
     return window.location.protocol === 'https:' && !window.location.port;
 })();
 

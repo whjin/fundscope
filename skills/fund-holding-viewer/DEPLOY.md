@@ -1,6 +1,6 @@
 ---
 name: "fund-scope-deploy"
-description: "FundScope 基金持仓分析平台部署指南。适用于将 Node.js + Express 应用部署到阿里云（Alibaba Cloud Linux 3），通过 Nginx 反向代理实现子路径访问（wuhuajin.com/fundscope），并配置 HTTPS。"
+description: "FundScope 基金持仓分析平台部署指南。适用于将 Node.js + Express 应用部署到阿里云（Alibaba Cloud Linux 3），通过子域名（fundscope.wuhuajin.com）独立访问，Nginx 反向代理 + HTTPS 自动续期。"
 ---
 
 # FundScope 部署指南（阿里云 Alibaba Cloud Linux 3）
@@ -8,26 +8,45 @@ description: "FundScope 基金持仓分析平台部署指南。适用于将 Node
 ## 一、部署架构概览
 
 ```
-浏览器访问 wuhuajin.com/fundscope/
+浏览器访问 https://fundscope.wuhuajin.com/
+    │
+    ▼
+DNS 解析：fundscope.wuhuajin.com → 47.107.183.204（阿里云 ECS）
     │
     ▼
 Nginx (80/443) — 反向代理
-    │  location /fundscope/
-    │  proxy_pass http://127.0.0.1:3000/  ← 剥离 /fundscope 前缀
+    │  location /
+    │  proxy_pass http://127.0.0.1:3000  ← 原样转发，无前缀剥离
     ▼
 Node.js Express (3000) — PM2 管理
     │
-    ├── /fundscope/api/*  →  /api/*   （API 路由）
-    ├── /fundscope/js/*   →  /js/*    （静态文件）
-    ├── /fundscope/css/*  →  /css/*   （静态文件）
-    └── /fundscope/       →  /        （首页 index.html）
+    ├── /api/funds/config  →  基金配置
+    ├── /api/fund/info     →  基金基本信息
+    ├── /api/fund/holdings →  持仓明细
+    ├── /api/stock/quote   →  股票行情
+    ├── /js/*              →  静态文件
+    ├── /css/*             →  静态文件
+    └── /                  →  首页 index.html
 ```
 
 ### 核心设计
-- **Node.js 服务保持 localhost:3000 不变**，本地开发测试不受影响
-- **Nginx 负责路径剥离**：外部 `/fundscope/*` → 内部 `/*`
+
+- **子域名独立访问**：`fundscope.wuhuajin.com` 专用于本项目，与主站 `wuhuajin.com`（GitHub Pages）互不干扰
+- **根路径代理**：Nginx `location /` + `proxy_pass http://127.0.0.1:3000`（不带尾部斜杠），原样转发路径，无需前缀剥离
+- **Node.js 服务保持 localhost:3000**：本地开发测试不受影响
 - **PM2 进程管理**：自动重启、开机自启
-- **HTTPS**：Let's Encrypt 免费证书自动续期
+- **HTTPS**：Let's Encrypt webroot 方式，支持自动续期
+
+### 与旧方案（子路径）的差异
+
+| 对比项 | 旧方案（子路径） | 新方案（子域名） |
+|--------|----------------|----------------|
+| 访问地址 | `wuhuajin.com/fundscope/` | `fundscope.wuhuajin.com/` |
+| DNS 配置 | wuhuajin.com → 阿里云 | wuhuajin.com → GitHub Pages（保留），fundscope.wuhuajin.com → 阿里云 |
+| Nginx location | `/fundscope/` + proxy_pass 末尾带 `/`（剥离前缀） | `/` + proxy_pass 不带 `/`（原样转发） |
+| server.js | 需要 BASE_PATH 环境变量 | 无需 BASE_PATH |
+| 前端 app.js | IS_STATIC 识别 wuhuajin.com | IS_STATIC 识别 `*.wuhuajin.com`（含子域名） |
+| 主站影响 | 需迁移主站到阿里云 | 主站完全不受影响 |
 
 ---
 
@@ -36,12 +55,15 @@ Node.js Express (3000) — PM2 管理
 | 项目 | 说明 |
 |---|---|
 | 操作系统 | Alibaba Cloud Linux 3.2104 LTS 64位 |
-| 域名 | wuhuajin.com |
+| 主域名 | wuhuajin.com（指向 GitHub Pages，运行 whjin.github.io） |
+| 子域名 | fundscope.wuhuajin.com（指向阿里云 ECS） |
+| 阿里云公网 IP | 47.107.183.204 |
 | GitHub 仓库 | fundscope |
-| 项目访问地址 | wuhuajin.com/fundscope |
+| 项目访问地址 | https://fundscope.wuhuajin.com/ |
 | Node.js 端口 | 3000 |
 | 进程管理 | PM2 |
 | 反向代理 | Nginx |
+| SSL 证书 | Let's Encrypt（webroot 方式，自动续期） |
 
 ---
 
@@ -65,307 +87,300 @@ pm2 -v
 pm2 list
 ```
 
-### 3.2 获取服务器公网 IP
+### 3.2 确认服务器公网 IP
 
 ```bash
-# 方式1：阿里云控制台 → ECS → 实例详情 → 公网 IP
-# 方式2：命令行查询
 curl ifconfig.me
+# 期望输出: 47.107.183.204
 ```
 
-### 3.3 确认 DNS 解析
+### 3.3 确认主域名 DNS 现状（不要改动）
 
-在域名服务商（阿里云万网）配置 DNS 解析记录：
-
-| 记录类型 | 主机记录 | 记录值 |
-|---|---|---|
-| A | @ | 服务器公网 IP |
-| A | www | 服务器公网 IP |
-
-验证解析生效：
 ```bash
-ping wuhuajin.com
-ping www.wuhuajin.com
+dig wuhuajin.com A +short
+# 期望输出: 185.199.109.153 等 GitHub Pages IP（保持不变）
 ```
 
 ---
 
 ## 四、代码准备
 
-### 4.1 拉取代码
+### 4.1 拉取最新代码
 
 ```bash
-cd /home/admin
-git clone https://github.com/你的用户名/fundscope.git
-cd fundscope
+cd /root/fundscope   # 你的项目目录
+git pull origin main
 ```
 
-### 4.2 安装依赖
+### 4.2 代码变更说明（已完成）
 
-```bash
-npm install
-```
+以下文件已修改以支持子域名部署：
 
-### 4.3 代码变更说明（已完成）
-
-以下文件已修改以支持子路径部署：
-
-**`js/app.js`** — 两处修改：
-
-1. `IS_STATIC` 检测逻辑 — 生产域名 `wuhuajin.com` 强制后端模式
+**`js/app.js`** — IS_STATIC 检测逻辑：
 ```javascript
 const IS_STATIC = (() => {
     const host = window.location.hostname;
     if (host.endsWith('.github.io')) return true;
     if (host === 'localhost' || host === '127.0.0.1') return false;
-    if (host === 'wuhuajin.com' || host === 'www.wuhuajin.com') return false;
+    // wuhuajin.com 主域及所有子域（如 fundscope.wuhuajin.com）均走后端模式
+    if (host === 'wuhuajin.com' || host.endsWith('.wuhuajin.com')) return false;
     return window.location.protocol === 'https:' && !window.location.port;
 })();
 ```
 
-2. API 路径改为相对路径（4处）
-```javascript
-// 旧：request('/api/fund/info?code=...')
-// 新：request('api/fund/info?code=...')
-// 相对路径配合 Nginx 路径剥离自动带上 /fundscope 前缀
+**`index.html`** — 缓存版本号 bump：
+```html
+<script src="js/app.js?v=30"></script>
 ```
 
-**`server.js`** — 新增 `BASE_PATH` 环境变量：
-```javascript
-const BASE_PATH = process.env.BASE_PATH || '';
+**`server.js`** — 无需修改代码：
+- `BASE_PATH` 仅用于日志，所有路由本就挂在根路径 `/`
+- 迁移后只需在 PM2 启动时不传 `BASE_PATH` 环境变量
 
-// 静态服务挂载到 BASE_PATH
-app.use(BASE_PATH || '/', express.static(...));
+---
 
-// 兜底路由检查 BASE_PATH
-app.get('*', (req, res) => {
-    if (BASE_PATH && !req.path.startsWith(BASE_PATH) && req.path !== '/') {
-        return res.status(404).send('Not Found');
-    }
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+## 五、DNS 配置（步骤 1）
+
+### 5.1 添加子域名 A 记录
+
+登录阿里云域名控制台（https://dc.console.aliyun.com/）：
+
+1. 找到域名 `wuhuajin.com` → **解析**
+2. **添加记录**：
+
+| 记录类型 | 主机记录 | 记录值 | TTL |
+|---------|---------|--------|-----|
+| A | `fundscope` | `47.107.183.204` | 600 |
+
+3. **不要修改**现有的 `wuhuajin.com` 和 `www` 记录（它们仍指向 GitHub Pages）
+
+### 5.2 验证 DNS 生效
+
+```bash
+# 等待 1-10 分钟后验证
+dig @8.8.8.8 +short fundscope.wuhuajin.com
+# 期望输出: 47.107.183.204
 ```
 
 ---
 
-## 五、PM2 配置
+## 六、PM2 配置（步骤 2）
 
-### 5.1 启动服务（带 BASE_PATH）
+### 6.1 重启服务（去掉 BASE_PATH）
 
 ```bash
-# 停掉旧服务（如果存在）
-pm2 delete web-server 2>/dev/null
+cd /root/fundscope
 
-# 使用环境变量启动
-BASE_PATH=/fundscope pm2 start server.js --name web-server
+# 停掉旧服务（清除 BASE_PATH 环境变量）
+pm2 delete fund-server 2>/dev/null
 
-# 查看服务状态
-pm2 list
-pm2 logs web-server --lines 20
+# 不带 BASE_PATH 重新启动
+pm2 start server.js --name fund-server
+
+# 保存配置
+pm2 save
 ```
 
-### 5.2 保存 PM2 配置
+### 6.2 设置开机自启（首次配置时执行）
 
 ```bash
-# 保存当前进程列表
-pm2 save
-
-# 设置开机自启（首次配置时执行）
 pm2 startup systemd
 # 按提示复制执行输出的命令
-
-# 再次保存（确保开机自启配置持久化）
 pm2 save
 ```
 
-### 5.3 PM2 常用命令
+### 6.3 验证服务
 
 ```bash
-pm2 list                    # 查看所有进程
-pm2 logs web-server         # 查看实时日志
-pm2 logs web-server --lines 50  # 查看最近50行
-pm2 restart web-server      # 重启服务
-pm2 stop web-server         # 停止服务
-pm2 delete web-server       # 删除服务
-pm2 flush                   # 清空日志
+# 查看进程状态
+pm2 list
+# 期望: fund-server 状态为 online
+
+# 查看启动日志（不应再有 BASE_PATH 行）
+pm2 logs fund-server --lines 10 --nostream
+
+# 直接访问 Node.js 服务
+curl http://127.0.0.1:3000/api/funds/config
+# 期望: {"success":true,"funds":[...]}
+
+curl http://127.0.0.1:3000/health
+# 期望: OK
 ```
 
 ---
 
-## 六、Nginx 配置
+## 七、Nginx 配置（步骤 3-5）
 
-### 6.1 查看现有配置
+### 7.1 准备 webroot 目录
 
 ```bash
-# Nginx 主配置
-cat /etc/nginx/nginx.conf
-
-# 检查已加载的配置文件
-sudo nginx -T | grep -E 'server_name|server {'
-
-# 列出 conf.d 目录
-ls -la /etc/nginx/conf.d/
+sudo mkdir -p /var/www/html
+sudo chown -R nginx:nginx /var/www/html
 ```
 
-### 6.2 创建站点配置
+### 7.2 备份旧配置
+
+```bash
+sudo cp /etc/nginx/conf.d/fundscope.conf /etc/nginx/conf.d/fundscope.conf.bak.$(date +%Y%m%d)
+```
+
+### 7.3 先部署 HTTP-80 块（用于签发证书）
 
 ```bash
 sudo vim /etc/nginx/conf.d/fundscope.conf
 ```
 
-写入以下内容：
+写入以下内容（仅 HTTP 块）：
 
 ```nginx
-# ============================================================
-# FundScope - 基金持仓分析平台
-# 访问地址: http://wuhuajin.com/fundscope
-# 架构: Nginx → Node.js(3000) → 上游 API
-# ============================================================
-
 server {
     listen 80;
-    server_name wuhuajin.com www.wuhuajin.com;
+    server_name fundscope.wuhuajin.com;
 
-    # 日志
-    access_log /var/log/nginx/fundscope.access.log;
-    error_log  /var/log/nginx/fundscope.error.log;
-
-    # 重定向 /fundscope → /fundscope/（确保相对路径正确解析）
-    location = /fundscope {
-        return 301 /fundscope/;
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+        try_files $uri =404;
     }
 
-    # 核心：/fundscope/ 路径反向代理到 Node.js
-    # 注意 proxy_pass 末尾的 /：表示剥离 /fundscope 前缀
-    # 外部请求 /fundscope/api/fund/info → 内部 /api/fund/info
-    location /fundscope/ {
-        proxy_pass http://127.0.0.1:3000/;
-        proxy_http_version 1.1;
-
-        # 传递真实客户端信息
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # 超时设置（适配基金数据请求）
-        proxy_connect_timeout 30s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-
-        # 缓冲区设置
-        proxy_buffering on;
-        proxy_buffer_size 4k;
-        proxy_buffers 8 16k;
-
-        # WebSocket 支持（预留）
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-
-    # 根路径健康检查
-    location = /health {
-        return 200 'OK';
-        add_header Content-Type text/plain;
+    location / {
+        return 301 https://$host$request_uri;
     }
 }
 ```
 
-### 6.3 检查并重载配置
+检查并重载：
 
 ```bash
-# 检查配置语法
-sudo nginx -t
-
-# 重载配置（不中断现有连接）
-sudo systemctl reload nginx
-
-# 如果是首次安装，直接启动
-sudo systemctl start nginx
-sudo systemctl enable nginx
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### 6.4 多配置冲突排查
+### 7.4 申请 SSL 证书（步骤 4）
 
-如果已有其他 server 块占用 `wuhuajin.com`：
+使用 webroot 方式（支持自动续期，优于旧的 `--manual --preferred-challenges dns`）：
 
 ```bash
-# 查看所有加载的配置
-sudo nginx -T
+sudo certbot certonly --webroot -w /var/www/html -d fundscope.wuhuajin.com
+```
 
-# 检查是否有重复的 server_name
-sudo nginx -T 2>&1 | grep -n "server_name.*wuhuajin"
+验证证书签发：
 
-# 禁用冲突配置（示例）
-# sudo mv /etc/nginx/conf.d/old-config.conf /etc/nginx/conf.d/old-config.conf.disabled
-# sudo nginx -t && sudo systemctl reload nginx
+```bash
+sudo ls /etc/letsencrypt/live/fundscope.wuhuajin.com/
+# 期望: cert.pem  chain.pem  fullchain.pem  privkey.pem  README
+```
+
+### 7.5 部署完整 Nginx 配置（步骤 5）
+
+将 `docs/fundscope.conf` 的完整内容写入服务器配置文件：
+
+```bash
+sudo vim /etc/nginx/conf.d/fundscope.conf
+```
+
+完整配置内容（参考仓库内 `docs/fundscope.conf`）：
+
+```nginx
+# WebSocket Connection 头映射
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# ---------- HTTP 80 ----------
+server {
+    listen 80;
+    server_name fundscope.wuhuajin.com;
+
+    access_log /var/log/nginx/fundscope.access.log;
+    error_log  /var/log/nginx/fundscope.error.log;
+
+    # Let's Encrypt webroot 证书验证
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+        try_files $uri =404;
+    }
+
+    # 其余请求跳转 HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ---------- HTTPS 443 ----------
+server {
+    listen 443 ssl http2;
+    server_name fundscope.wuhuajin.com;
+
+    ssl_certificate     /etc/letsencrypt/live/fundscope.wuhuajin.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/fundscope.wuhuajin.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+
+    access_log /var/log/nginx/fundscope.access.log;
+    error_log  /var/log/nginx/fundscope.error.log;
+
+    # 根路径反向代理（proxy_pass 不带尾部斜杠，原样转发）
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 16k;
+
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }
+}
+```
+
+检查并重载：
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ---
 
-## 七、防火墙与安全组
+## 八、防火墙与安全组
 
-### 7.1 阿里云安全组
+### 8.1 阿里云安全组
 
-阿里云控制台 → ECS → 安全组 → 添加入方向规则：
+阿里云控制台 → ECS → 安全组 → 确认入方向规则：
 
 | 协议 | 端口范围 | 授权对象 | 优先级 |
 |---|---|---|---|
 | TCP | 80/80 | 0.0.0.0/0 | 1 |
 | TCP | 443/443 | 0.0.0.0/0 | 1 |
 
-### 7.2 服务器本地防火墙
+**不要开放 3000 端口**，Node.js 仅通过 Nginx 反向代理对外服务。
+
+### 8.2 服务器本地防火墙
 
 ```bash
 # 查看 firewalld 状态
 sudo firewall-cmd --list-all
 
-# 如果 firewalld 正在运行，开放 HTTP
+# 如果 firewalld 正在运行，开放 HTTP/HTTPS
 sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
 sudo firewall-cmd --reload
-
-# 或者直接关闭防火墙（阿里云安全组已防护时）
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
 ```
-
----
-
-## 八、HTTPS 配置（推荐）
-
-### 8.1 安装 Certbot
-
-```bash
-# Alibaba Cloud Linux 3 兼容 CentOS 8
-sudo dnf install -y certbot python3-certbot-nginx
-```
-
-### 8.2 申请证书
-
-```bash
-# 申请 Let's Encrypt 免费证书（Nginx 自动配置）
-sudo certbot --nginx -d wuhuajin.com -d www.wuhuajin.com
-
-# 按提示：
-# 1. 输入邮箱（用于到期通知）
-# 2. 同意服务条款
-# 3. 选择是否强制 HTTPS 重定向（推荐：Redirect）
-```
-
-### 8.3 自动续期
-
-```bash
-# 验证自动续期
-sudo certbot renew --dry-run
-
-# 查看续期计时器
-sudo systemctl list-timers | grep certbot
-```
-
-Certbot 会自动修改 Nginx 配置：
-- 添加 443 端口 SSL server 块
-- 配置证书路径 `/etc/letsencrypt/live/wuhuajin.com/fullchain.pem`
-- HTTP(80) 自动 301 重定向到 HTTPS(443)
 
 ---
 
@@ -374,176 +389,200 @@ Certbot 会自动修改 Nginx 配置：
 ### 9.1 本地服务验证
 
 ```bash
-# 1. Node.js 服务检查
-pm2 list                    # 状态应为 online
-pm2 logs web-server         # 无错误日志
+# 1. PM2 状态
+pm2 list
+# 期望: fund-server 状态为 online
 
 # 2. Node.js 直接访问
 curl http://127.0.0.1:3000/api/funds/config
-# 返回: {"success":true,"funds":[...]}
+# 期望: {"success":true,"funds":[...]}
 
-# 3. 通过 Nginx 验证
-curl http://127.0.0.1/fundscope/api/funds/config
-# 返回: {"success":true,"funds":[...]}
-
-# 4. 首页访问
-curl -I http://127.0.0.1/fundscope/
-# 返回: HTTP/1.1 200 OK
+# 3. 通过 Nginx HTTPS 访问
+curl -sk https://127.0.0.1/api/funds/config -H "Host: fundscope.wuhuajin.com"
+# 期望: {"success":true,"funds":[...]}
 ```
 
 ### 9.2 外部访问验证
 
 ```bash
-# HTTP 访问
-curl -I http://wuhuajin.com/fundscope/
+# HTTPS 首页
+curl -I https://fundscope.wuhuajin.com/
+# 期望: HTTP/2 200
 
-# HTTPS 访问
-curl -I https://wuhuajin.com/fundscope/
+# HTTPS API
+curl -s https://fundscope.wuhuajin.com/api/funds/config
+# 期望: {"success":true,"funds":[...]}
 
-# API 接口测试
-curl https://wuhuajin.com/fundscope/api/fund/info?code=000001
+# HTTPS 静态资源
+curl -I https://fundscope.wuhuajin.com/js/app.js
+# 期望: HTTP/2 200, Content-Type: application/javascript
+
+# HTTP 自动跳转
+curl -I http://fundscope.wuhuajin.com/
+# 期望: 301 → https://fundscope.wuhuajin.com/
 ```
 
 ### 9.3 浏览器验证
 
-1. 访问 `https://wuhuajin.com/fundscope/`
-2. 输入基金代码如 `000001` 测试查询
-3. 检查持仓数据、图表、股票行情是否正常
-4. F12 → Network 检查 API 请求路径是否正确
+1. 访问 `https://fundscope.wuhuajin.com/`
+2. F12 → Network 检查：
+   - `api/funds/config` 请求 URL 为 `https://fundscope.wuhuajin.com/api/funds/config`，状态 200
+   - **不走** `api.allorigins.win` 等 CORS 代理（确认 IS_STATIC 修复生效）
+3. 输入基金代码如 `000001` 测试查询
+4. 检查持仓数据、图表、股票行情是否正常
+
+### 9.4 主站影响验证
+
+```bash
+# 确认主站仍正常（GitHub Pages）
+curl -I https://wuhuajin.com/
+# 期望: 200，由 GitHub Pages 返回
+```
 
 ---
 
-## 十、故障排查
+## 十、清理旧配置（观察 1-2 天后执行）
 
-### 10.1 常见问题速查表
+确认新子域名稳定运行后，清理旧的子路径配置：
 
-| 问题 | 排查步骤 |
-|---|---|
-| 页面 502 Bad Gateway | ① `pm2 list` 确认 Node 在线 ② `curl 127.0.0.1:3000` 确认服务存活 ③ 检查 `proxy_pass` 端口是否一致 |
-| 页面 404 Not Found | ① 检查 Nginx `location /fundscope/` 配置 ② 确认 `proxy_pass` 末尾带 `/` ③ 检查 `server_name` 是否匹配 |
-| API 请求 404 | ① 确认 Nginx 路径剥离正常 ② `curl 127.0.0.1:3000/api/funds/config` 验证 ③ 检查 app.js 中 API 路径为相对路径 |
-| 静态资源 404 | ① 检查 `index.html` 引用的路径是否为相对路径 ② 确认 Nginx 正确转发静态文件请求 |
-| HTTPS 证书错误 | ① `certbot renew --dry-run` 检查续期 ② 确认 DNS 解析正确 ③ 查看 `/etc/letsencrypt/live/` 证书文件 |
-| 页面加载慢 | ① `pm2 logs web-server` 检查响应时间 ② 检查 Nginx 缓冲区配置 ③ 确认上游 API 响应速度 |
+### 10.1 移除旧 Nginx server 块
 
-### 10.2 日志排查命令
+如果 `/etc/nginx/conf.d/` 中还有旧的 `wuhuajin.com` / `www.wuhuajin.com` server 块：
 
 ```bash
-# Nginx 访问日志（查看请求是否到达）
-sudo tail -f /var/log/nginx/fundscope.access.log
+# 查看所有配置
+sudo nginx -T 2>&1 | grep -E "server_name|listen"
 
-# Nginx 错误日志（查看代理错误）
-sudo tail -f /var/log/nginx/fundscope.error.log
+# 编辑旧配置文件，删除 wuhuajin.com/www 的 server 块
+sudo vim /etc/nginx/conf.d/旧配置文件.conf
 
-# PM2 应用日志
-pm2 logs web-server --lines 100
-
-# 系统日志
-sudo journalctl -u nginx -f
-sudo journalctl -u pm2-web-server -f
+# 重载
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### 10.3 一键诊断脚本
+### 10.2 删除旧证书
 
 ```bash
-#!/bin/bash
-echo "=== 1. PM2 状态 ==="
-pm2 list
+# 查看所有证书
+sudo certbot certificates
 
-echo -e "\n=== 2. Node.js 直接测试 ==="
-curl -s http://127.0.0.1:3000/api/funds/config | head -c 200
+# 删除旧证书（wuhuajin.com DNS 已指向 GitHub，无法续期）
+sudo certbot delete --cert-name wuhuajin.com
+```
 
-echo -e "\n\n=== 3. Nginx 代理测试 ==="
-curl -s http://127.0.0.1/fundscope/api/funds/config | head -c 200
+### 10.3 验证自动续期
 
-echo -e "\n\n=== 4. Nginx 配置检查 ==="
-sudo nginx -t
-
-echo -e "\n=== 5. 端口监听 ==="
-ss -tlnp | grep -E '80|443|3000'
-
-echo -e "\n=== 6. 安全组连通测试 ==="
-echo "请在浏览器访问 https://wuhuajin.com/fundscope/ 验证"
+```bash
+sudo certbot renew --dry-run
+# 期望: Congratulations, all simulated renewals succeeded
 ```
 
 ---
 
 ## 十一、更新部署流程
 
-当代码更新后，执行以下步骤：
+代码更新后，执行以下步骤：
 
 ```bash
 # 1. 拉取最新代码
-cd /home/admin/fundscope
+cd /root/fundscope
 git pull origin main
 
-# 2. 安装/更新依赖
+# 2. 安装/更新依赖（如有变更）
 npm install
 
 # 3. 重启服务
-pm2 restart web-server
+pm2 restart fund-server
 
 # 4. 验证
-pm2 logs web-server --lines 20
-curl -s http://127.0.0.1:3000/api/funds/config | head -c 100
+pm2 logs fund-server --lines 20
+curl -s https://fundscope.wuhuajin.com/api/funds/config | head -c 100
 ```
 
 ---
 
 ## 十二、回滚方案
 
-如果新版本出问题，快速回滚：
+### 12.1 回滚到子路径方案（如需）
 
 ```bash
-# 查看 git 历史
+# 1. 恢复旧 Nginx 配置
+sudo cp /etc/nginx/conf.d/fundscope.conf.bak.YYYYMMDD /etc/nginx/conf.d/fundscope.conf
+sudo nginx -t && sudo systemctl reload nginx
+
+# 2. PM2 重新带上 BASE_PATH 启动
+pm2 delete fund-server
+BASE_PATH=/fundscope pm2 start server.js --name fund-server
+pm2 save
+
+# 3. DNS 改回 wuhuajin.com → 阿里云（注意：这会影响主站）
+```
+
+### 12.2 回滚代码
+
+```bash
+cd /root/fundscope
 git log --oneline -10
-
-# 回滚到指定版本
 git checkout <commit-hash>
-
-# 重启服务
-pm2 restart web-server
+pm2 restart fund-server
 ```
 
 ---
 
-## 十三、性能优化建议
+## 十三、故障排查
 
-### 13.1 Nginx 缓存（可选）
+### 13.1 常见问题速查表
 
-在 `location /fundscope/` 内添加静态资源缓存：
+| 问题 | 排查步骤 |
+|---|---|
+| 页面 502 Bad Gateway | ① `pm2 list` 确认 Node 在线 ② `curl 127.0.0.1:3000` 确认服务存活 ③ 检查 `proxy_pass` 端口是否一致 |
+| 页面 404 Not Found | ① `dig fundscope.wuhuajin.com` 确认 DNS 指向阿里云 ② 检查 Nginx `server_name` 是否匹配 ③ 确认 `proxy_pass` 不带尾部斜杠 |
+| API 请求 404 | ① `curl 127.0.0.1:3000/api/funds/config` 验证 Node.js ② 检查 Nginx `location /` 配置 ③ 确认 PM2 不带 BASE_PATH |
+| 静态资源 404 | ① 检查 `index.html` 引用的路径是否为相对路径 ② 确认 Nginx 原样转发（proxy_pass 不带 `/`） |
+| 前端走 CORS 代理 | ① F12 Network 检查请求是否走 `api.allorigins.win` ② 确认 app.js IS_STATIC 识别 `fundscope.wuhuajin.com` ③ 清除浏览器缓存或 bump 版本号 |
+| HTTPS 证书错误 | ① `sudo certbot renew --dry-run` 检查续期 ② 确认 DNS 解析正确 ③ 查看 `/etc/letsencrypt/live/fundscope.wuhuajin.com/` 证书文件 |
+| 证书续期失败 | ① 确认 webroot 目录 `/var/www/html` 存在且可写 ② 确认 Nginx `/.well-known/acme-challenge/` location 配置正确 |
 
-```nginx
-# CSS/JS 缓存 7 天
-location ~* /fundscope/(css|js)/.*\.(css|js)$ {
-    proxy_pass http://127.0.0.1:3000;
-    expires 7d;
-    add_header Cache-Control "public, immutable";
-}
-
-# 图片缓存 30 天
-location ~* /fundscope/.*\.(png|jpg|jpeg|gif|ico|svg)$ {
-    proxy_pass http://127.0.0.1:3000;
-    expires 30d;
-    add_header Cache-Control "public";
-}
-```
-
-### 13.2 PM2 集群模式（高并发时）
+### 13.2 日志排查命令
 
 ```bash
-# 使用多核集群
-pm2 start server.js --name web-server -i 2
+# Nginx 访问日志
+sudo tail -f /var/log/nginx/fundscope.access.log
 
-# 但注意：集群模式下 BASE_PATH 环境变量需正确传递
+# Nginx 错误日志
+sudo tail -f /var/log/nginx/fundscope.error.log
+
+# PM2 应用日志
+pm2 logs fund-server --lines 100
+
+# 系统日志
+sudo journalctl -u nginx -f
 ```
 
-### 13.3 Node.js 内存调优
+### 13.3 一键诊断脚本
 
 ```bash
-# PM2 启动时增加内存限制
-BASE_PATH=/fundscope pm2 start server.js --name web-server \
-    --node-args="--max-old-space-size=512"
+#!/bin/bash
+echo "=== 1. DNS 解析 ==="
+dig +short fundscope.wuhuajin.com
+
+echo -e "\n=== 2. PM2 状态 ==="
+pm2 list
+
+echo -e "\n=== 3. Node.js 直接测试 ==="
+curl -s http://127.0.0.1:3000/api/funds/config | head -c 200
+
+echo -e "\n\n=== 4. Nginx HTTPS 测试 ==="
+curl -s https://fundscope.wuhuajin.com/api/funds/config | head -c 200
+
+echo -e "\n\n=== 5. Nginx 配置检查 ==="
+sudo nginx -t
+
+echo -e "\n=== 6. 端口监听 ==="
+ss -tlnp | grep -E '80|443|3000'
+
+echo -e "\n=== 7. 证书状态 ==="
+sudo certbot certificates 2>/dev/null | grep -A 2 "fundscope.wuhuajin.com"
 ```
 
 ---
@@ -559,9 +598,24 @@ BASE_PATH=/fundscope pm2 start server.js --name web-server \
 
 ```bash
 # 备份 Nginx 配置
-sudo cp /etc/nginx/conf.d/fundscope.conf ~/fundscope.conf.bak
+sudo cp /etc/nginx/conf.d/fundscope.conf ~/fundscope.conf.bak.$(date +%Y%m%d)
 
 # 备份 PM2 配置
 pm2 save
 cp ~/.pm2/dump.pm2 ~/pm2-backup/
+```
+
+---
+
+## 十五、部署顺序速查
+
+```
+1. DNS 加 A 记录 fundscope → 47.107.183.204（等生效）
+2. 代码 git pull（app.js + index.html 已改）
+3. PM2 重启（pm2 delete + pm2 start，不带 BASE_PATH）
+4. Nginx 先部署 HTTP-80 块 → reload
+5. certbot webroot 签发 fundscope.wuhuajin.com 证书
+6. Nginx 部署完整配置（HTTP+HTTPS）→ reload
+7. 浏览器验证 https://fundscope.wuhuajin.com/
+8. 观察 1-2 天 → 清理旧配置 + 验证证书自动续期
 ```
