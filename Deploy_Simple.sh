@@ -42,7 +42,7 @@ info "当前版本: $(git log --oneline -1)"
 # ========== 安装依赖 ==========
 if git diff HEAD~1 --name-only | grep -q '^package\.json$'; then
     info "package.json 有变更，安装依赖..."
-    npm install --production
+    pnpm install --production
 else
     info "package.json 无变更，跳过依赖安装"
 fi
