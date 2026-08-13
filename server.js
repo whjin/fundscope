@@ -189,20 +189,25 @@ app.get('/api/stock/quote', async (req, res) => {
                 }
                 
                 const parts = dataStr.split('~');
-                if (parts.length >= 33) {
+                if (parts.length >= 5) {
                     // 腾讯财经字段说明：
-                    // parts[1] = 股票名称
-                    // parts[2] = 股票代码
-                    // parts[3] = 当前价格
-                    // parts[4] = 昨收价格
-                    // parts[32] = 涨跌幅(%)
+                    // parts[1] = 股票名称, parts[3] = 当前价格, parts[4] = 昨收价格
+                    // parts[32] = 涨跌幅(%)（仅兜底，优先用价格计算保证准确）
                     const stockName = parts[1] || '';
-                    const zdf = parseFloat(parts[32]);
-                    
+                    const currentPrice = parseFloat(parts[3]);
+                    const prevClose = parseFloat(parts[4]);
+                    let zdf = null;
+                    if (prevClose > 0 && !isNaN(currentPrice)) {
+                        zdf = Math.round(((currentPrice - prevClose) / prevClose * 100) * 100) / 100;
+                    } else if (parts.length >= 33) {
+                        const rawZdf = parseFloat(parts[32]);
+                        if (!isNaN(rawZdf)) zdf = rawZdf;
+                    }
+
                     results[stockCode] = {
                         code: stockCode,
                         name: stockName,
-                        zdf: !isNaN(zdf) ? zdf : null
+                        zdf
                     };
                 }
             }
