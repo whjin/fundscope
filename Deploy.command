@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
 
-# ==============================================
-# FundScope 一键提交部署脚本
-# 兼容：macOS Terminal (zsh/bash) / Git Bash / Linux
-# 用法：
-#   1. 在 Commit.md 第一行写入提交信息（格式：YYYY-MM-DD HH:MM:SS 提交内容）
-#   2. 双击此文件即可（macOS 自动打开 Terminal 执行）
-# ==============================================
-
 set -e
 
 # 切换到脚本所在目录（支持双击 .command 运行）
@@ -131,6 +123,10 @@ echo ""
 if [ -t 0 ]; then
     echo ""
     read -rp "按回车键退出..."
+    # 双击 .command 运行时自动关闭 Terminal 窗口
+    if [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
+        osascript -e 'tell application "Terminal" to close (current settings of selected tab of front window)' 2>/dev/null
+    fi
 fi
 
 exit 0
