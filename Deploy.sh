@@ -10,6 +10,9 @@
 
 set -e
 
+# 切换到脚本所在目录（支持双击 .command 运行）
+cd "$(dirname "$0")"
+
 # 颜色输出
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
