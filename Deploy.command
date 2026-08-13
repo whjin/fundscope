@@ -94,30 +94,31 @@ info "暂存文件..."
 git add -A
 
 # 检查是否有变更需要提交
-if git diff --cached --quiet; then
+HAS_CHANGES=false
+if ! git diff --cached --quiet; then
+    HAS_CHANGES=true
+    # 显示变更概况
+    CHANGED=$(git diff --cached --stat | tail -n 1)
+    info "变更概况：$CHANGED"
+
+    # 提交
+    info "提交代码..."
+    git commit -m "$latest_commit"
+
+    # 推送
+    info "推送到远程仓库..."
+    git push origin "$BRANCH"
+
+    # ==============================================
+    # 4. 完成
+    # ==============================================
+    info "提交并推送成功！"
+    echo ""
+    git log --oneline -3
+    echo ""
+else
     info "没有需要提交的变更"
-    exit 0
 fi
-
-# 显示变更概况
-CHANGED=$(git diff --cached --stat | tail -n 1)
-info "变更概况：$CHANGED"
-
-# 提交
-info "提交代码..."
-git commit -m "$latest_commit"
-
-# 推送
-info "推送到远程仓库..."
-git push origin "$BRANCH"
-
-# ==============================================
-# 4. 完成
-# ==============================================
-info "提交并推送成功！"
-echo ""
-git log --oneline -3
-echo ""
 
 # 交互式终端等待按键（非交互环境跳过）
 if [ -t 0 ]; then
