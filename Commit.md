@@ -1,1 +1,1 @@
-2026-08-13 18:57:10 feat: 修改 Deploy.sh 脚本
+2026-08-13 19:05:18 feat: 修改 Deploy.command 脚本
