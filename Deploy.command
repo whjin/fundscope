@@ -99,7 +99,7 @@ fi
 if [ -t 0 ]; then
     echo -e "\n${YELLOW}按任意键关闭窗口...${NC}"
     # 读取单个字符，任意按键直接跳过，超时3秒自动关闭
-    read -n 1 -s -t 3 any_key
+    read -n 1 -s -t 3 any_key || true
 fi
 
 # 判断终端类型执行关闭
