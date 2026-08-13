@@ -3,5 +3,12 @@ _Probe*
 _test_*
 *.log
 
+# macOS 资源分支文件
+._*
+.DS_Store
+
 # 部署敏感信息 - 服务器密码文件，切勿提交到版本控制
 password.txt
+
+# IDE 生成目录
+.trae/
