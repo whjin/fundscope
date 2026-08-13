@@ -225,49 +225,6 @@ app.get('/api/stock/quote', async (req, res) => {
     }
 });
 
-app.get('/api/fund/holdings/debug', async (req, res) => {
-    const code = String(req.query.code || '').trim();
-    if (!/^\d{6}$/.test(code)) {
-        return res.status(400).json({ success: false, message: '请输入正确的6位基金代码' });
-    }
-    try {
-        const url = `https://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jjcc&code=${code}&topline=10&year=&month=&rt=${Date.now()}`;
-        const { status, text } = await requestGet(url, `https://fundf10.eastmoney.com/ccmx_${code}.html`);
-        if (status !== 200 || !text) {
-            return res.status(502).json({ success: false, message: `上游返回异常 (HTTP ${status})` });
-        }
-        const m = text.match(/apidata\s*=\s*(\{[\s\S]*?\})\s*;?/);
-        if (!m) return res.json({ success: false, message: '未找到 apidata' });
-        const apidata = S.safeEval(m[1]);
-        if (!apidata) return res.json({ success: false, message: 'apidata 解析失败' });
-
-        const html = apidata.content || '';
-        const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-        const tableInfo = [];
-        for (let i = 0; i < Math.min(tables.length, 2); i++) {
-            const tableHtml = tables[i];
-            const headerRowMatch = tableHtml.match(/<thead[\s\S]*?<\/thead>/i);
-            let headers = [];
-            if (headerRowMatch) {
-                headers = [...headerRowMatch[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m => S.stripTags(m[1]));
-            }
-            const tbodyMatch = tableHtml.match(/<tbody[\s\S]*?<\/tbody>/i);
-            const tbodyHtml = tbodyMatch ? tbodyMatch[0] : tableHtml;
-            const trs = tbodyHtml.match(/<tr[\s\S]*?<\/tr>/gi) || [];
-            const sampleData = [];
-            for (let j = 0; j < Math.min(trs.length, 3); j++) {
-                const cells = [...trs[j].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m => S.stripTags(m[1]));
-                sampleData.push(cells);
-            }
-            tableInfo.push({ tableIndex: i, headers, sampleData });
-        }
-        res.json({ success: true, tableCount: tables.length, tables: tableInfo });
-    } catch (err) {
-        console.error('[api/fund/holdings/debug]', err.message);
-        res.status(500).json({ success: false, message: '调试失败: ' + err.message });
-    }
-});
-
 app.get('*', (_req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });

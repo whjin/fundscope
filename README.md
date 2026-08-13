@@ -1,54 +1,44 @@
-# 部署流程
+# FundScope - 基金持仓分析平台
+
+基于 Node.js + Express 的基金持仓分析 H5 应用，支持基金搜索、持仓明细展示、实时行情和可视化图表。
+
+## 技术栈
+
+- **后端**: Node.js + Express
+- **前端**: 原生 HTML/CSS/JS + ECharts
+- **部署**: Nginx + PM2 + Let's Encrypt SSL
+
+## 本地开发
 
 ```bash
-# 1. 更新系统包
-dnf update -y
-
-# 2. 安装环境：Node、Git、Nginx
-dnf install nodejs npm git nginx -y
-
-# 3. 全局安装pm2进程守护
-npm install pm2 -g
-
-# 4. 拉取GitHub上你的H5+Express项目
-git clone https://github.com/你的账号/仓库名.git
-cd 仓库文件夹
-
-# 5. 安装依赖并后台启动
 npm install
-pm2 start server.js --name web-server
-
-# 6. 设置开机自启
-pm2 startup
-pm2 save
+npm start
+# 访问 http://localhost:3000
 ```
 
-```bash
-# 清理失败文件夹
-rm -rf fundscope
-git clone https://gitclone.com/github.com/whjin/fundscope.git
+## 部署
 
+详细部署流程请参考 [skills/fund-holding-viewer/SKILL.md](skills/fund-holding-viewer/SKILL.md)。
+
+```bash
+# 服务器上快速启动
+git clone https://github.com/whjin/fundscope.git
 cd fundscope
-npm install
+npm install --production
 pm2 start server.js --name fund-server
-pm2 startup && pm2 save
+pm2 save && pm2 startup
 ```
 
-# 生成 `HTTPS` 证书
+## 项目结构
 
-```bash
-certbot certonly --manual --preferred-challenges dns -d wuhuajin.com -d www.wuhuajin.com
-# 每次生成的解析记录和 value 需要手动添加到 DNS 服务器，总共有两个
-
-# 验证根域名TXT记录（替换成你自己的域名）
-dig @8.8.8.8 -t TXT _acme-challenge.wuhuajin.com +short
-
-# 验证www域名TXT记录
-dig @8.8.8.8 -t TXT _acme-challenge.www.wuhuajin.com +short
-
-# 完成以上校验后才能继续按回车执行后续证书生成
 ```
-
-> 已经完成了域名备案，域名为wuhuajin.com，该域名已经用于个人博客，当前项目fundscope是github的演示项目，访问路径可以是fundscope.wuhuajin.com或wuhuajin.com/fundscope，如果需要选择，则优先采用wuhuajin.com/fundscope。当前项目fundscope已经部署到阿里云服务器，访问地址为。需求是对部署进行优化或重新部署，实现协议更换为https（如果可以，访问地址改为wuhuajin.com/fundscope），然后把部署成功后的步骤进行精简，生成skill保存在skills/fund-holding-viewer/SKILL.md中。
-test_change_1786619604
-test_change_1786619623
+├── index.html          # 入口页面
+├── server.js           # Express 后端服务
+├── js/
+│   ├── app.js          # 前端主逻辑
+│   └── shared.js       # 前后端共享解析模块
+├── css/style.css       # 样式
+├── data.json           # 基金配置列表
+├── Deploy.command      # macOS 一键提交脚本
+└── skills/             # 部署文档
+```

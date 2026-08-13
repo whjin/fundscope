@@ -365,37 +365,6 @@ body {
     transform: translateX(4px);
 }
 
-.quick-select {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 24px;
-    flex-wrap: wrap;
-}
-
-.quick-label {
-    color: var(--text-muted);
-    font-size: 14px;
-}
-
-.fund-tag {
-    background: rgba(212, 175, 55, 0.1);
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    border-radius: 20px;
-    padding: 8px 16px;
-    color: var(--accent-gold);
-    font-size: 14px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.fund-tag:hover {
-    background: rgba(212, 175, 55, 0.2);
-    border-color: var(--accent-gold);
-    transform: translateY(-1px);
-}
-
 .loading-state,
 .error-state {
     text-align: center;

@@ -761,27 +761,10 @@ async function queryFund(fundCode) {
         }
 
         showMainContent();
-        saveSearchHistory(fundCode, parsedInfo);
 
     } catch (error) {
         console.error('查询失败:', error);
         showError(error.message || '获取数据失败，请稍后重试');
-    }
-}
-
-function saveSearchHistory(fundCode, info) {
-    try {
-        const history = JSON.parse(localStorage.getItem('fundHistory') || '[]');
-        const entry = {
-            code: fundCode,
-            name: info.name || '--',
-            time: new Date().toISOString()
-        };
-        const filtered = history.filter(item => item.code !== fundCode);
-        filtered.unshift(entry);
-        localStorage.setItem('fundHistory', JSON.stringify(filtered.slice(0, 10)));
-    } catch (e) {
-        console.warn('保存历史失败:', e);
     }
 }
 

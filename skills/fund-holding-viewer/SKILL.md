@@ -334,7 +334,6 @@ server {
 | 更新代码 | `cd /root/fundscope && git pull && pm2 restart fund-server` |
 | 更新代码（含依赖） | `cd /root/fundscope && git pull && npm install && pm2 restart fund-server` |
 | Nginx 重载 | `nginx -t && systemctl reload nginx` |
-| 健康诊断 | `bash /root/fundscope/skills/fund-holding-viewer/scripts/diagnose.sh` |
 | 证书续期 | `certbot renew`（Let's Encrypt 自动设置 timer） |
 
 ---
@@ -351,12 +350,6 @@ server {
 | HTTPS 证书错误 | `certbot certificates` 查看有效期 → `certbot renew --dry-run` 测试续期 |
 | 证书续期失败 | webroot 目录 `/var/www/html` 存在且可写 → Nginx `/.well-known/acme-challenge/` 正确 |
 | HTTP 不跳转 | Nginx 80 端口 server 块 `return 301` 是否存在 → `nginx -t` 检查 |
-
-### 一键诊断脚本
-```bash
-cd /root/fundscope/skills/fund-holding-viewer/scripts
-bash diagnose.sh
-```
 
 ---
 
