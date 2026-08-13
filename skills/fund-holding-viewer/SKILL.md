@@ -42,7 +42,7 @@ description: "基金持仓分析H5应用部署方案。覆盖阿里云ECS部署�
 ## 三、方案 A：子域名 HTTPS 部署（推荐）
 
 ### 前置条件
-- 阿里云 ECS（Alibaba Cloud Linux 3 / CentOS 8+），公网 IP 如 `47.107.183.204`
+- 阿里云 ECS（Alibaba Cloud Linux 3 / CentOS 8+），公网 IP 如 `<服务器公网IP>`
 - 域名 `wuhuajin.com` 已备案
 - 服务器已安装：Node.js ≥14、Git、Nginx、PM2
 
@@ -51,12 +51,12 @@ description: "基金持仓分析H5应用部署方案。覆盖阿里云ECS部署�
 
 | 类型 | 主机记录 | 记录值 | TTL |
 |------|---------|--------|-----|
-| A | `fundscope` | `47.107.183.204` | 600 |
+| A | `fundscope` | `<服务器公网IP>` | 600 |
 
 验证生效：
 ```bash
 dig @8.8.8.8 +short fundscope.wuhuajin.com
-# 期望输出: 47.107.183.204
+# 期望输出: <服务器公网IP>
 ```
 
 ### Step 2：代码准备 + 启动服务
@@ -267,7 +267,7 @@ pm2 save
 ```
 
 ### 4.3 DNS 切换
-将 `wuhuajin.com` 的 A 记录从 GitHub Pages IP 改为阿里云 IP `47.107.183.204`。
+将 `wuhuajin.com` 的 A 记录从 GitHub Pages IP 改为阿里云 IP `<服务器公网IP>`。
 
 ### 4.4 签发证书（含主域）
 ```bash

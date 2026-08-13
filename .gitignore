@@ -13,8 +13,8 @@ password.txt
 # IDE 生成目录
 .trae/
 
-# 部署脚本临时文件
-Commit.md
-
 # 非本项目包管理器文件（项目使用 npm）
 pnpm-lock.yaml
+
+# 环境变量
+.env
