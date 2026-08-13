@@ -51,3 +51,4 @@ dig @8.8.8.8 -t TXT _acme-challenge.www.wuhuajin.com +short
 
 > 已经完成了域名备案，域名为wuhuajin.com，该域名已经用于个人博客，当前项目fundscope是github的演示项目，访问路径可以是fundscope.wuhuajin.com或wuhuajin.com/fundscope，如果需要选择，则优先采用wuhuajin.com/fundscope。当前项目fundscope已经部署到阿里云服务器，访问地址为。需求是对部署进行优化或重新部署，实现协议更换为https（如果可以，访问地址改为wuhuajin.com/fundscope），然后把部署成功后的步骤进行精简，生成skill保存在skills/fund-holding-viewer/SKILL.md中。
 test_change_1786619604
+test_change_1786619623
