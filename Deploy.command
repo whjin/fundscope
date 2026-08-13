@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-# 切换到脚本所在目录（支持双击 .command 运行）
-cd "$(dirname "$0")"
+# 切换到脚本所在目录（双击.command运行核心）
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "${SCRIPT_DIR}"
 
-# 颜色输出
+# ========== 颜色定义 ==========
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
@@ -17,117 +18,96 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 COMMIT_FILE="Commit.md"
 DEFAULT_MESSAGE="提交更新"
-TIME_THRESHOLD=600  # 10分钟内的 Commit.md 记录视为有效
+TIME_THRESHOLD=600  # 10分钟超时
 
-# ==============================================
-# 1. 平台检测：兼容 macOS(BSD) 和 Linux/Git Bash(GNU) 的 date 命令
-# ==============================================
+# ========== 兼容Mac/ Linux date时间戳函数 ==========
 to_timestamp() {
     local ts="$1"
-    # 尝试 GNU date (Linux / Git Bash)
     date -d "$ts" +%s 2>/dev/null && return
-    # 尝试 BSD date (macOS)
     date -j -f "%Y-%m-%d %H:%M:%S" "$ts" +%s 2>/dev/null && return
     echo ""
 }
 
-# ==============================================
-# 2. 读取 Commit.md 提取提交信息
-# ==============================================
-if [ ! -f "$COMMIT_FILE" ]; then
-    touch "$COMMIT_FILE"
-fi
+# ========== 读取Commit.md提交备注 ==========
+[ ! -f "${COMMIT_FILE}" ] && touch "${COMMIT_FILE}"
 
-# 取第一行非空内容
-latest_commit_line=$(sed '/^[[:space:]]*$/d' "$COMMIT_FILE" | head -n 1)
+# 过滤空行取第一行有效内容
+latest_commit_line=$(sed '/^[[:space:]]*$/d' "${COMMIT_FILE}" | head -n 1)
 
-# 提取时间戳（YYYY-MM-DD HH:MM:SS）
+# 拆分时间和备注
 commit_timestamp_str=$(echo "$latest_commit_line" | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
-
-# 提取提交消息（去掉时间戳前缀）
-if [ -n "$commit_timestamp_str" ]; then
-    latest_commit=$(echo "$latest_commit_line" | sed "s/^$commit_timestamp_str//" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+if [[ -n "${commit_timestamp_str}" ]]; then
+    latest_commit=$(echo "$latest_commit_line" | sed "s/^${commit_timestamp_str}//" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 else
-    latest_commit="$latest_commit_line"
+    latest_commit="${latest_commit_line}"
 fi
 
-# 时间戳超时检查：超过阈值则用默认消息
-if [ -n "$commit_timestamp_str" ]; then
-    commit_ts=$(to_timestamp "$commit_timestamp_str")
-    if [ -n "$commit_ts" ]; then
+# 超时判断
+if [[ -n "${commit_timestamp_str}" ]]; then
+    commit_ts=$(to_timestamp "${commit_timestamp_str}")
+    if [[ -n "${commit_ts}" ]]; then
         current_ts=$(date +%s)
         time_diff=$(( current_ts - commit_ts ))
-        time_diff=${time_diff#-}  # 取绝对值
-        if [ "$time_diff" -gt "$TIME_THRESHOLD" ]; then
+        time_diff=${time_diff#-}
+        if [[ ${time_diff} -gt ${TIME_THRESHOLD} ]]; then
             warn "Commit.md 记录已超过 ${TIME_THRESHOLD}s，使用默认提交信息"
             latest_commit=""
         fi
     fi
 fi
 
-# 如果 Commit.md 为空或超时，使用默认消息
-if [ -z "$latest_commit" ]; then
-    latest_commit="$DEFAULT_MESSAGE"
-fi
+# 兜底默认提交文案
+[[ -z "${latest_commit}" ]] && latest_commit="${DEFAULT_MESSAGE}"
+info "提交信息：${latest_commit}"
 
-info "提交信息：$latest_commit"
-
-# ==============================================
-# 3. Git 操作
-# ==============================================
-# 检查是否在 git 仓库中
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    error "当前目录不是 Git 仓库"
+# ========== Git 提交推送逻辑 ==========
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    error "当前目录不是Git仓库！"
     exit 1
 fi
 
-# 获取当前分支
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-info "当前分支：$BRANCH"
+info "当前分支：${BRANCH}"
 
-# 拉取远程更新（允许失败，可能是首次推送无远程分支）
+# 拉取远程
 info "拉取远程更新..."
-git pull origin "$BRANCH" 2>/dev/null || warn "git pull 失败（可能是首次推送或无远程分支），继续提交..."
+git pull origin "${BRANCH}" 2>/dev/null || warn "pull失败，跳过拉取直接提交"
 
-# 暂存所有变更
-info "暂存文件..."
 git add -A
-
-# 检查是否有变更需要提交
 HAS_CHANGES=false
+
 if ! git diff --cached --quiet; then
     HAS_CHANGES=true
-    # 显示变更概况
     CHANGED=$(git diff --cached --stat | tail -n 1)
-    info "变更概况：$CHANGED"
+    info "变更概况：${CHANGED}"
 
-    # 提交
-    info "提交代码..."
-    git commit -m "$latest_commit"
-
-    # 推送
+    git commit -m "${latest_commit}"
     info "推送到远程仓库..."
-    git push origin "$BRANCH"
-
-    # ==============================================
-    # 4. 完成
-    # ==============================================
+    git push origin "${BRANCH}"
     info "提交并推送成功！"
     echo ""
     git log --oneline -3
     echo ""
 else
-    info "没有需要提交的变更"
+    info "无需要提交的文件变更"
 fi
 
-# 交互式终端等待按键（非交互环境跳过）
+# ==============================================
+# 【核心修复块】1. 按任意按键继续，不再只限制回车
+# 【核心修复块】2. 兼容Apple Terminal自动关闭
+# ==============================================
 if [ -t 0 ]; then
-    echo ""
-    read -rp "按回车键退出..."
-    # 双击 .command 运行时自动关闭 Terminal 窗口
-    if [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
-        osascript -e 'tell application "Terminal" to close (current settings of selected tab of front window)' 2>/dev/null
-    fi
+    echo -e "\n${YELLOW}按任意键关闭窗口...${NC}"
+    # 读取单个字符，任意按键直接跳过，超时3秒自动关闭
+    read -n 1 -s -t 3 any_key
+fi
+
+# 判断终端类型执行关闭
+if [[ "${TERM_PROGRAM}" == "Apple_Terminal" ]]; then
+    # AppleScript 静默关闭当前标签页，屏蔽报错
+    osascript -e 'tell application "Terminal" to close front window' 2>/dev/null
+elif [[ "${TERM_PROGRAM}" == "iTerm2" ]]; then
+    osascript -e 'tell application "iTerm2" to close current window of front terminal' 2>/dev/null
 fi
 
 exit 0
