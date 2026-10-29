@@ -1,0 +1,7 @@
+# FundScope robots.txt
+# 允许所有搜索引擎抓取；指向 sitemap 便于完整收录
+
+User-agent: *
+Allow: /
+
+Sitemap: https://fundscope.wuhuajin.com/sitemap.xml
