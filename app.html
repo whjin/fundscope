@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 - FundScope</title>
+    <meta name="description" content="登录或注册 FundScope 账户，开始你的基金持仓分析。" />
+    <link rel="canonical" href="https://fundscope.wuhuajin.com/app.html" />
+    <link rel="stylesheet" href="css/site.css?v=1" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <a class="nav-logo" href="index.html"><span class="logo-icon">📊</span><span>FundScope</span></a>
+      <div class="nav-links">
+        <a class="nav-item" href="index.html">首页</a>
+        <a class="nav-item" href="analyze.html">功能</a>
+        <a class="nav-item" href="pricing.html">定价</a>
+        <a class="nav-item" href="app.html">登录</a>
+      </div>
+    </nav>
+
+    <div class="layout-container">
+      <div class="auth-wrap">
+        <div class="auth-card">
+          <div class="logo">📊 FundScope</div>
+          <p class="subtitle" id="authTitle">登录你的 FundScope 账户</p>
+
+          <!-- 登录表单 -->
+          <form id="loginForm" autocomplete="off">
+            <input type="email" id="authEmail" class="auth-field" placeholder="邮箱地址" required />
+            <input type="password" id="authPassword" class="auth-field" placeholder="密码" required />
+            <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
+          </form>
+
+          <div class="auth-divider"><span>or</span></div>
+
+          <button type="button" class="btn btn-secondary" id="googleBtn">Continue with Google</button>
+          <button type="button" class="btn btn-secondary" id="githubBtn">Continue with GitHub</button>
+
+          <div class="auth-divider"></div>
+
+          <button type="button" class="btn btn-secondary" id="toggleMode">没有账户？Create Account</button>
+
+          <p class="auth-note" id="authMessage" style="min-height:18px;"></p>
+
+          <p class="auth-note">
+            注册即表示你同意 <a href="terms.html">服务条款</a> 和 <a href="privacy.html">隐私政策</a>。
+          </p>
+
+          <a href="index.html" class="auth-back">← 返回 FundScope 首页</a>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/auth.js?v=1"></script>
+  </body>
+</html>
