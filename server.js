@@ -308,15 +308,48 @@ app.get("*", (req, res) => {
   res.status(404).sendFile(path.join(__dirname, "404.html"));
 });
 
+// 启动横幅：按显示宽度对齐（东亚全角字符占 2 个半角宽），保证右边框线 ║ 严格对齐
+function displayWidth(str) {
+  let w = 0;
+  for (const ch of str) {
+    const c = ch.codePointAt(0);
+    if (
+      (c >= 0x1100 && c <= 0x115f) || // Hangul Jamo
+      (c >= 0x2e80 && c <= 0xa4cf) || // CJK Radicals..Yi
+      (c >= 0xac00 && c <= 0xd7a3) || // Hangul Syllables
+      (c >= 0xf900 && c <= 0xfaff) || // CJK Compatibility Ideographs
+      (c >= 0xfe30 && c <= 0xfe4f) || // CJK Compatibility Forms
+      (c >= 0xff00 && c <= 0xff60) || // Fullwidth Forms
+      (c >= 0xffe0 && c <= 0xffe6) ||
+      (c >= 0x20000 && c <= 0x2fffd) || // CJK Extension B
+      (c >= 0x30000 && c <= 0x3fffd) // CJK Extension C..G
+    ) {
+      w += 2;
+    } else {
+      w += 1;
+    }
+  }
+  return w;
+}
+
+function bannerRow(content, width) {
+  const pad = Math.max(0, width - 2 - displayWidth(content));
+  return '║ ' + content + ' '.repeat(pad) + ' ║';
+}
+
 app.listen(PORT, () => {
-  console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║        FundScope - 基金持仓分析平台 (Node.js 后端)             ║
-╠══════════════════════════════════════════════════════════════╣
-║  访问地址:  http://localhost:${String(PORT).padEnd(37)}║
-║  本地测试:  http://127.0.0.1:${String(PORT).padEnd(36)}║
-╚══════════════════════════════════════════════════════════════╝
-`);
+  const W = 62;
+  const line = '═'.repeat(W);
+  console.log(
+    [
+      '╔' + line + '╗',
+      bannerRow('FundScope - 基金持仓分析平台 (Node.js 后端)', W),
+      '╠' + line + '╣',
+      bannerRow('访问地址:  http://localhost:' + PORT, W),
+      bannerRow('本地测试:  http://127.0.0.1:' + PORT, W),
+      '╚' + line + '╝',
+    ].join('\n')
+  );
   console.log(
     `[INFO] Node 版本: ${process.version}  |  工作目录: ${__dirname}`,
   );
