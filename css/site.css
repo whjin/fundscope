@@ -67,13 +67,18 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.01em;
 }
 .nav-logo .logo-icon {
   font-size: 24px;
+}
+.nav-logo .logo-img {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 .nav-links {
   display: flex;
@@ -198,6 +203,9 @@ a:hover {
   box-shadow: var(--shadow);
 }
 .feature-card .icon {
+  display: inline-block;
+  height: 32px;
+  width: 32px;
   font-size: 28px;
   margin-bottom: 12px;
 }
@@ -319,6 +327,12 @@ a:hover {
   color: var(--brand-1);
   margin-bottom: 8px;
 }
+.auth-card .logo-img {
+  height: 40px;
+  width: auto;
+  margin: 0 auto 8px;
+  display: block;
+}
 .auth-card .subtitle {
   color: var(--text-muted);
   font-size: 14px;
@@ -401,10 +415,18 @@ a:hover {
   gap: 10px;
   font-size: 20px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text);
   text-decoration: none;
 }
 .ft-logo .logo-icon {
+  font-size: 24px;
+}
+.ft-logo .logo-img {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+.ft-logo .logo-text {
   font-size: 24px;
 }
 .ft-desc {

@@ -291,8 +291,21 @@ app.get("/api/stock/quote", async (req, res) => {
   }
 });
 
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+app.get("*", (req, res) => {
+  // 根路径 → 首页（express.static 关闭了 index 自动服务，由这里兜底）
+  if (req.path === "/") {
+    return res.sendFile(path.join(__dirname, "index.html"));
+  }
+  // 其余路径若真实存在静态文件则正常返回（兜底；正常情况下已由 express.static 处理）
+  const filePath = path.join(__dirname, req.path);
+  if (
+    filePath.startsWith(path.join(__dirname) + path.sep) &&
+    fs.existsSync(filePath)
+  ) {
+    return res.sendFile(filePath);
+  }
+  // 不存在的路径 → 返回自定义 404.html（保留 404 状态码，利于 SEO 与 AdSense 校验）
+  res.status(404).sendFile(path.join(__dirname, "404.html"));
 });
 
 app.listen(PORT, () => {

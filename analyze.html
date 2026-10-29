@@ -4,31 +4,79 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>基金持仓分析 - FundScope</title>
-    <meta name="description" content="FundScope 基金持仓分析：搜索基金代码，查看最新净值、持仓明细、持仓占比分布与市值排行。" />
+    <meta
+      name="description"
+      content="FundScope 基金持仓分析：搜索基金代码，查看最新净值、持仓明细、持仓占比分布与市值排行。"
+    />
     <link rel="stylesheet" href="css/style.css?v=15" />
     <link rel="stylesheet" href="css/site.css?v=1" />
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
       /* 分析页内顶部导航与底部合规 footer 用浅色卡片，贴合深色背景 */
-      body.analyze-page { background: var(--bg-primary); }
-      .analyze-nav {
-        max-width: 1400px; margin: 0 auto; padding: 16px 24px;
-        display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      body.analyze-page {
+        background: var(--bg-primary);
       }
-      .analyze-nav .nav-logo { color: #e8ecf4; font-size: 18px; }
-      .analyze-nav .nav-links a.nav-item { color: #8b9bb4; }
-      .analyze-nav .nav-links a.nav-item:hover { background: rgba(212,175,55,0.12); color: #d4af37; }
-      .analyze-nav .nav-links a.nav-cta { background: linear-gradient(135deg,#d4af37,#f0d060); color: #0a1628; }
-      .analyze-footer { background: #0f1f3a; border-top: 1px solid rgba(212,175,55,0.15); }
-      .analyze-footer .ft-links a, .analyze-footer .ft-desc, .analyze-footer .ft-copy, .analyze-footer .ft-beian, .analyze-footer .ft-email-bottom { color: #8b9bb4; }
-      .analyze-footer .ft-links a:hover, .analyze-footer .ft-beian:hover, .analyze-footer .ft-email-bottom:hover { color: #d4af37; }
-      .analyze-footer .ft-col-title { color: #e8ecf4; }
-      .analyze-footer .ft-copy-link { color: #d4af37; }
-      .analyze-footer .ft-divider { background: rgba(212,175,55,0.15); }
+      .analyze-nav {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .analyze-nav .nav-logo {
+        color: #e8ecf4;
+        font-size: 20px;
+      }
+      .analyze-nav .logo-text {
+        font-size: 20px;
+      }
+      .analyze-nav .nav-links a.nav-item {
+        color: #8b9bb4;
+      }
+      .analyze-nav .nav-links a.nav-item:hover {
+        background: rgba(212, 175, 55, 0.12);
+        color: #d4af37;
+      }
+      .analyze-nav .nav-links a.nav-cta {
+        background: linear-gradient(135deg, #d4af37, #f0d060);
+        color: #0a1628;
+      }
+      .analyze-footer {
+        background: #0f1f3a;
+        border-top: 1px solid rgba(212, 175, 55, 0.15);
+      }
+      .analyze-footer .ft-links a,
+      .analyze-footer .ft-desc,
+      .analyze-footer .ft-copy,
+      .analyze-footer .ft-beian,
+      .analyze-footer .ft-email-bottom {
+        color: #8b9bb4;
+      }
+      .analyze-footer .ft-links a:hover,
+      .analyze-footer .ft-beian:hover,
+      .analyze-footer .ft-email-bottom:hover {
+        color: #d4af37;
+      }
+      .analyze-footer .ft-col-title {
+        color: #e8ecf4;
+      }
+      .analyze-footer .ft-copy-link {
+        color: #d4af37;
+      }
+      .analyze-footer .ft-divider {
+        background: rgba(212, 175, 55, 0.15);
+      }
     </style>
-      <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3179609405594046" crossorigin="anonymous"></script>
-</head>
+    <!-- Google AdSense -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3179609405594046"
+      crossorigin="anonymous"
+    ></script>
+  </head>
   <body class="analyze-page">
     <div class="bg-decoration">
       <div class="bg-grid"></div>
@@ -37,7 +85,12 @@
     </div>
 
     <nav class="analyze-nav">
-      <a class="nav-logo" href="index.html"><span class="logo-icon">📊</span><span>FundScope</span></a>
+      <a class="nav-logo" href="index.html"
+        ><img class="logo-img" src="images/logo1.png" alt="" /><span
+          class="logo-text"
+          >FundScope</span
+        ></a
+      >
       <div class="nav-links">
         <a class="nav-item" href="index.html">首页</a>
         <a class="nav-item" href="analyze.html">功能</a>
@@ -50,8 +103,10 @@
     <div class="container">
       <header class="header">
         <div class="logo">
-          <span class="logo-icon">📊</span>
-          <h1 class="logo-text">FundScope</h1>
+          <img class="logo-img" src="images/logo1.png" alt="" /><span
+            class="logo-text"
+            >FundScope</span
+          >
         </div>
         <p class="subtitle">专业基金持仓分析平台</p>
       </header>
@@ -60,9 +115,25 @@
         <div class="search-box">
           <div class="search-input-wrapper">
             <div class="combobox-wrapper">
-              <input type="text" id="fundCode" class="search-input combobox-input" placeholder="输入基金名称或代码，点击选择基金..." maxlength="20" autocomplete="off" />
+              <input
+                type="text"
+                id="fundCode"
+                class="search-input combobox-input"
+                placeholder="输入基金名称或代码，点击选择基金..."
+                maxlength="20"
+                autocomplete="off"
+              />
               <span id="clearBtn" class="clear-icon hidden" title="清空">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -187,8 +258,16 @@
       <div class="ft-inner">
         <div class="ft-grid">
           <div class="ft-brand">
-            <a class="ft-logo" href="index.html"><span class="logo-icon">📊</span><span>FundScope</span></a>
-            <p class="ft-desc">FundScope · 专业基金持仓分析工具。搜索基金，快速掌握持仓明细、占比分布与市值排行。</p>
+            <a class="ft-logo" href="index.html"
+              ><img class="logo-img" src="images/logo1.png" alt="" /><span
+                class="logo-text"
+                >FundScope</span
+              ></a
+            >
+            <p class="ft-desc">
+              FundScope ·
+              专业基金持仓分析工具。搜索基金，快速掌握持仓明细、占比分布与市值排行。
+            </p>
           </div>
           <div class="ft-col">
             <h4 class="ft-col-title">产品</h4>
@@ -217,14 +296,27 @@
           <div class="ft-col">
             <h4 class="ft-col-title">联系</h4>
             <div class="ft-links">
-              <a class="ft-email-bottom" href="mailto:wuhuajin09@163.com">wuhuajin09@163.com</a>
+              <a class="ft-email-bottom" href="mailto:wuhuajin09@163.com"
+                >wuhuajin09@163.com</a
+              >
             </div>
           </div>
         </div>
         <div class="ft-divider"></div>
         <div class="ft-bottom">
-          <span class="ft-copy">© 2013–<span id="year"></span> <a href="index.html" class="ft-copy-link">FundScope</a></span>
-          <span><a class="ft-beian" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026112434号</a></span>
+          <span class="ft-copy"
+            >© 2013–<span id="year"></span>
+            <a href="index.html" class="ft-copy-link">FundScope</a></span
+          >
+          <span
+            ><a
+              class="ft-beian"
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >粤ICP备2026112434号</a
+            ></span
+          >
         </div>
       </div>
     </footer>
@@ -232,7 +324,7 @@
     <script src="js/shared.js?v=1"></script>
     <script src="js/app.js?v=32"></script>
     <script>
-      document.getElementById('year').textContent = new Date().getFullYear();
+      document.getElementById("year").textContent = new Date().getFullYear();
     </script>
   </body>
 </html>
