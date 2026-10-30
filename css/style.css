@@ -104,6 +104,7 @@ body {
 }
 
 .container {
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 32px 24px;
@@ -157,7 +158,62 @@ body {
 }
 
 .search-section {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+.cta-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.1),
+    rgba(212, 175, 55, 0.03)
+  );
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 16px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+}
+
+.cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cta-text strong {
+  color: var(--accent-gold);
+  font-size: 15px;
+  letter-spacing: 0.5px;
+}
+
+.cta-text span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.cta-btn {
+  background: linear-gradient(
+    135deg,
+    var(--accent-gold) 0%,
+    var(--accent-gold-light) 100%
+  );
+  color: var(--bg-primary);
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
 }
 
 .search-box {
@@ -410,17 +466,17 @@ body {
 
 .loading-state,
 .error-state {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  min-height: 600px;
+  position: relative;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
-  z-index: 10;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  margin-bottom: 24px;
+  z-index: 1;
 }
 
 .spinner {

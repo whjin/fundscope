@@ -98,9 +98,12 @@ Full playbook: [docs/skills/fund-holding-viewer/SKILL.md](docs/skills/fund-holdi
 
 ## Recent Development
 
+- **Analyze page UX fixes** — fixed flex layout collapse (`.container` / `.analyze-nav` now `width:100%`), fixed hidden main-content after query success, and switched the loading overlay from full-screen absolute cover to an in-flow card below the search bar so the search box never disappears when switching funds; data updates in place instead of a full-page re-render.
+- **Subscription CTA** — added a gold-gradient `.cta-banner` on `analyze.html` (between search and results) linking to `pricing.html` for the 7-day free trial.
 - **Overall upgrade** — rebuilt the analysis experience: holdings table + ECharts donut/bar + real-time quotes + combobox search.
 - **Google AdSense** — added review-required pages (`about/contact/privacy/terms/aigc-policy.html`), `ads.txt`, `404.html`, `sitemap.xml`, `robots.txt` for SEO & monetization review.
 - **Bug fix** — `server.js` catch-all now serves a custom `404.html` (HTTP 404) instead of always returning `index.html` with HTTP 200.
+- **Repo hygiene** — stripped macOS AppleDouble metadata (`._*`) and `.DS_Store` files from the working tree.
 
 ---
 

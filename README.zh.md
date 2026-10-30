@@ -98,9 +98,12 @@ pm2 save && pm2 startup
 
 ## 近期开发
 
+- **分析页交互修复** — 修复 flex 布局塌陷（`.container` / `.analyze-nav` 补 `width:100%`）、修复查询成功后主内容区不显示的 bug；loading 层从全屏 absolute 覆盖改为搜索栏下方的流式卡片，切换基金时搜索框不再消失，数据原地替换而非整页重渲染。
+- **订阅入口** — `analyze.html` 在搜索卡片下方新增金色渐变 `.cta-banner`，左侧 FundScope Pro 卖点，右侧按钮跳转 `pricing.html`（7 天免费试用）。
 - **整体升级改造** — 重构分析体验：持仓表格 + ECharts 环形/柱状图 + 实时行情 + 搜索下拉。
 - **Google AdSense** — 补齐审核所需页面（about/contact/privacy/terms/aigc-policy）、`ads.txt`、`404.html`、`sitemap.xml`、`robots.txt`，服务 SEO 与广告变现审核。
 - **缺陷修复** — `server.js` 兜底路由：不存在的路径现在返回自定义 `404.html`（HTTP 404），而非一律回退 `index.html`（HTTP 200）。
+- **仓库清理** — 删除工作区中的 macOS AppleDouble 元数据（`._*`）和 `.DS_Store` 文件。
 
 ---
 
