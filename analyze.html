@@ -8,7 +8,7 @@
       name="description"
       content="FundScope 基金持仓分析：搜索基金代码，查看最新净值、持仓明细、持仓占比分布与市值排行。"
     />
-    <link rel="stylesheet" href="css/style.css?v=20" />
+    <link rel="stylesheet" href="css/style.css?v=22" />
     <link rel="stylesheet" href="css/site.css?v=1" />
     <script src="js/echarts.min.js?v=5.4.3"></script>
     <style>
@@ -169,6 +169,10 @@
       </div>
 
       <main id="mainContent" class="main-content hidden">
+        <div id="resultLoading" class="result-loading hidden">
+          <div class="spinner spinner-sm"></div>
+          <p class="result-loading-text">加载中...</p>
+        </div>
         <section class="info-card">
           <div class="info-header">
             <div class="info-title">
@@ -331,7 +335,7 @@
     </footer>
 
     <script src="js/shared.js?v=1"></script>
-    <script src="js/app.js?v=35"></script>
+    <script src="js/app.js?v=36"></script>
     <script>
       document.getElementById("year").textContent = new Date().getFullYear();
     </script>

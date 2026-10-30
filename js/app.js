@@ -220,10 +220,13 @@ function parseHoldingData(apidata, fundCode) {
 /* ===== UI 渲染 ===== */
 
 function showLoading() {
-  // 仅在首次加载（结果区还隐藏）时显示全屏 loading；
-  // 切换基金时结果区已展示，保持搜索栏和已有数据可见，不整屏覆盖。
-  if (document.getElementById("mainContent").classList.contains("hidden")) {
+  const main = document.getElementById("mainContent");
+  if (main.classList.contains("hidden")) {
+    // 首次加载：结果区还没显示，展示流式 loading 卡片
     document.getElementById("loadingState").classList.remove("hidden");
+  } else {
+    // 切换基金：结果区已展示，在结果区内部叠加局部 loading 遮罩
+    document.getElementById("resultLoading").classList.remove("hidden");
   }
   document.getElementById("errorState").classList.add("hidden");
 }
@@ -231,12 +234,14 @@ function showLoading() {
 function showError(message) {
   document.getElementById("loadingState").classList.add("hidden");
   document.getElementById("errorState").classList.remove("hidden");
+  document.getElementById("resultLoading").classList.add("hidden");
   document.getElementById("errorText").textContent = message || "获取数据失败";
 }
 
 function showMainContent() {
   document.getElementById("loadingState").classList.add("hidden");
   document.getElementById("errorState").classList.add("hidden");
+  document.getElementById("resultLoading").classList.add("hidden");
   document.getElementById("mainContent").classList.remove("hidden");
 }
 
