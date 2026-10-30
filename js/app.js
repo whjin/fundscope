@@ -222,20 +222,17 @@ function parseHoldingData(apidata, fundCode) {
 function showLoading() {
   document.getElementById("loadingState").classList.remove("hidden");
   document.getElementById("errorState").classList.add("hidden");
-  document.getElementById("mainContent").classList.add("hidden");
 }
 
 function showError(message) {
   document.getElementById("loadingState").classList.add("hidden");
   document.getElementById("errorState").classList.remove("hidden");
-  document.getElementById("mainContent").classList.add("hidden");
   document.getElementById("errorText").textContent = message || "获取数据失败";
 }
 
 function showMainContent() {
   document.getElementById("loadingState").classList.add("hidden");
   document.getElementById("errorState").classList.add("hidden");
-  document.getElementById("mainContent").classList.remove("hidden");
 }
 
 function renderFundInfo(info, holdingInfo) {
