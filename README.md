@@ -1,8 +1,17 @@
-# FundScope - Fund Holdings Analysis Platform
+# FundScope — Fund Holdings Analysis Platform
 
-A fund holdings analysis H5 application built with **Node.js + Express** and native frontend. Enter a fund code to instantly view latest net value, holdings details, holding-ratio distribution, and market-cap ranking — with real-time stock quotes.
+A fund holdings analysis web app built with **Node.js + Express** and native frontend. Enter a fund code to instantly view latest net value, holdings details, holding-ratio distribution, and market-cap ranking — overlaid with real-time stock quotes.
 
-Live site: `https://fundscope.wuhuajin.com`
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![Node](https://img.shields.io/badge/node-%3E%3D14-brightgreen)
+![Site](https://img.shields.io/badge/site-fundscope.wuhuajin.com-blue)
+![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
+**English** | [中文](README.zh.md)
+
+> A high-performance fund analysis tool for Chinese mutual funds. No frameworks, no build-tooling overhead — just fast, accessible, SEO-friendly pages backed by a lightweight Express proxy over the eastmoney public API.
+
+**Live Site:** https://fundscope.wuhuajin.com · **Author:** [Wu Huajin](https://wuhuajin.com) — Full-Stack Developer | Indie Hacker
 
 ---
 
@@ -76,7 +85,7 @@ Run in dev/static mode (GitHub Pages) — `app.js` automatically detects the hos
 Deployed via **subdomain HTTPS** (`fundscope.wuhuajin.com`) on an Aliyun ECS:
 
 ```
-Nginx (80→443, SSL) → Node.js Express (:3000, PM2) 
+Nginx (80→443, SSL) → Node.js Express (:3000, PM2)
   ├─ /api/funds/config   fund config
   ├─ /api/fund/info      fund info
   ├─ /api/fund/holdings  holdings details

@@ -1,8 +1,17 @@
-# FundScope - 基金持仓分析平台
+# FundScope — 基金持仓分析平台
 
-基于 **Node.js + Express** 与原生前端的基金持仓分析 H5 应用。输入基金代码，秒级掌握最新净值、持仓明细、持仓占比分布与市值排行，并叠加实时股票行情。
+基于 **Node.js + Express** 与原生前端的基金持仓分析 Web 应用。输入基金代码，秒级掌握最新净值、持仓明细、持仓占比分布与市值排行，并叠加实时股票行情。
 
-线上地址：`https://fundscope.wuhuajin.com`
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![Node](https://img.shields.io/badge/node-%3E%3D14-brightgreen)
+![Site](https://img.shields.io/badge/site-fundscope.wuhuajin.com-blue)
+![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
+[English](README.md) | **中文**
+
+> 一款面向国内公募基金的高性能分析工具。无框架、无构建工具开销 —— 基于轻量 Express 代理直连东方财富公开接口，快速、可访问、对 SEO 友好。
+
+**线上地址：** https://fundscope.wuhuajin.com · **作者：** [Wu Huajin](https://wuhuajin.com) — 全栈开发者 | 独立黑客
 
 ---
 
