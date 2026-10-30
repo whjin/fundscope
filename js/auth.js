@@ -1,35 +1,19 @@
 /**
- * FundScope 登录模块（localStorage 模拟）
- * 提供 Sign In / Create Account 演示登录态，不涉及真实后端。
+ * FundScope 登录/注册（演示入口）
+ * 不做真实鉴权，不写 localStorage；表单校验通过即进入 analyze.html。
  */
 (function () {
   'use strict';
-
-  var STORAGE_KEY = 'fundscope_user';
-
-  function getStoredUser() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function setStoredUser(user) {
-    try {
-      if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-      else localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-      /* ignore */
-    }
-  }
 
   function showMsg(text, isError) {
     var el = document.getElementById('authMessage');
     if (!el) return;
     el.textContent = text || '';
     el.style.color = isError ? '#ef4444' : '#22c55e';
+  }
+
+  function goApp() {
+    window.location.href = 'analyze.html';
   }
 
   var isSignup = false;
@@ -41,13 +25,6 @@
   var title = document.getElementById('authTitle');
   var googleBtn = document.getElementById('googleBtn');
   var githubBtn = document.getElementById('githubBtn');
-
-  // 已登录则直接跳转功能页
-  var existing = getStoredUser();
-  if (existing && existing.email) {
-    window.location.href = 'analyze.html';
-    return;
-  }
 
   function switchMode() {
     isSignup = !isSignup;
@@ -77,29 +54,18 @@
       return;
     }
 
-    if (isSignup) {
-      setStoredUser({ email: email, name: email.split('@')[0], createdAt: Date.now() });
-      showMsg('🎉 账户创建成功！正在进入...');
-    } else {
-      setStoredUser({ email: email, name: email.split('@')[0], lastLoginAt: Date.now() });
-      showMsg('✅ 登录成功！正在进入...');
-    }
-
-    setTimeout(function () {
-      window.location.href = 'analyze.html';
-    }, 600);
+    showMsg(isSignup ? '🎉 账户创建成功，正在进入...' : '✅ 登录成功，正在进入...');
+    setTimeout(goApp, 500);
   });
 
   toggleBtn.addEventListener('click', switchMode);
 
-  // 第三方登录：模拟演示
-  function oauth(method) {
-    setStoredUser({ email: method.toLowerCase() + '_demo@fundscope.local', name: method, via: method, createdAt: Date.now() });
-    showMsg('已通过 ' + method + ' 演示登录，正在进入...');
-    setTimeout(function () {
-      window.location.href = 'analyze.html';
-    }, 600);
-  }
-  googleBtn.addEventListener('click', function () { oauth('Google'); });
-  githubBtn.addEventListener('click', function () { oauth('GitHub'); });
+  googleBtn.addEventListener('click', function () {
+    showMsg('正在通过 Google 进入...');
+    setTimeout(goApp, 500);
+  });
+  githubBtn.addEventListener('click', function () {
+    showMsg('正在通过 GitHub 进入...');
+    setTimeout(goApp, 500);
+  });
 })();
